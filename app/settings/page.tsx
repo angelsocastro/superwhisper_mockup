@@ -202,22 +202,22 @@ function LocalModelBanner({ onOpenModels }: { onOpenModels: () => void }) {
   return (
     <div className="hairline relative flex h-[128px] items-end overflow-hidden rounded-[14px]">
       {/* dusk-mountain-style photographic background */}
-      <div className="absolute inset-0 bg-gradient-to-b from-[#312244] via-[#5b3a52] to-[#c17a52]" />
+      <div className="absolute inset-0 bg-gradient-to-b from-[#6b4f8f] via-[#c2698a] to-[#f0a868]" />
       <div
-        className="absolute inset-x-0 bottom-0 h-[70%] bg-[#241a30]/80"
+        className="absolute inset-x-0 bottom-0 h-[70%] bg-[#3d2c52]/75"
         style={{
           clipPath:
             "polygon(0% 100%, 0% 55%, 18% 32%, 34% 52%, 50% 15%, 66% 46%, 82% 28%, 100% 48%, 100% 100%)",
         }}
       />
       <div
-        className="absolute inset-x-0 bottom-0 h-[45%] bg-[#150f1c]/85"
+        className="absolute inset-x-0 bottom-0 h-[45%] bg-[#231a35]/80"
         style={{
           clipPath:
             "polygon(0% 100%, 0% 70%, 22% 48%, 42% 66%, 58% 34%, 74% 58%, 90% 40%, 100% 62%, 100% 100%)",
         }}
       />
-      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/45 via-black/0 to-transparent" />
 
       <button
         onClick={() => setDismissed(true)}
