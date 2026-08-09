@@ -14,6 +14,7 @@ import {
   Cloud,
   HardDrive,
   Sparkles,
+  Lock,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -199,41 +200,50 @@ function LocalModelBanner({ onOpenModels }: { onOpenModels: () => void }) {
   if (dismissed) return null;
 
   return (
-    <div className="hairline relative flex overflow-hidden rounded-[14px] bg-card">
-      <div className="relative flex w-[132px] shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-[#9061f9] via-[#7c3aed] to-[#4c1d95]">
-        <div className="absolute -top-8 -left-8 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
-        <div className="absolute -right-8 -bottom-10 h-32 w-32 rounded-full bg-black/25 blur-2xl" />
-        <div className="relative flex h-14 w-14 items-center justify-center rounded-[16px] bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
-          <HardDrive className="h-7 w-7 text-white" strokeWidth={1.5} />
-        </div>
-      </div>
-
-      <div className="flex flex-1 flex-col justify-center gap-1.5 px-5 py-4">
-        <span className="text-[11px] font-semibold tracking-wide text-[#c4a3fb] uppercase">
-          On-device model
-        </span>
-        <p className="text-[13px] font-semibold text-foreground">
-          No internet? No problem.
-        </p>
-        <p className="text-[12px] leading-relaxed text-muted-foreground">
-          Local models keep everything private and work fully offline — no
-          internet required.
-        </p>
-        <button
-          onClick={onOpenModels}
-          className="mt-1 w-fit text-[12px] font-medium text-primary hover:brightness-125"
-        >
-          Switch model →
-        </button>
-      </div>
+    <div className="hairline relative flex h-[128px] items-end overflow-hidden rounded-[14px]">
+      {/* dusk-mountain-style photographic background */}
+      <div className="absolute inset-0 bg-gradient-to-b from-[#312244] via-[#5b3a52] to-[#c17a52]" />
+      <div
+        className="absolute inset-x-0 bottom-0 h-[70%] bg-[#241a30]/80"
+        style={{
+          clipPath:
+            "polygon(0% 100%, 0% 55%, 18% 32%, 34% 52%, 50% 15%, 66% 46%, 82% 28%, 100% 48%, 100% 100%)",
+        }}
+      />
+      <div
+        className="absolute inset-x-0 bottom-0 h-[45%] bg-[#150f1c]/85"
+        style={{
+          clipPath:
+            "polygon(0% 100%, 0% 70%, 22% 48%, 42% 66%, 58% 34%, 74% 58%, 90% 40%, 100% 62%, 100% 100%)",
+        }}
+      />
+      <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-black/5 to-transparent" />
 
       <button
         onClick={() => setDismissed(true)}
         aria-label="Dismiss"
-        className="absolute top-2.5 right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+        className="absolute top-2.5 right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-white/70 transition-colors hover:bg-white/15 hover:text-white"
       >
         <X className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
+
+      <div className="relative z-10 flex w-full items-center justify-between gap-4 px-5 py-4">
+        <div className="flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white/70 uppercase">
+            <Lock className="h-3 w-3" strokeWidth={2} />
+            Private by design
+          </span>
+          <p className="text-[15px] font-semibold text-white">
+            Nothing leaves your Mac.
+          </p>
+        </div>
+        <button
+          onClick={onOpenModels}
+          className="shrink-0 rounded-full bg-white/15 px-3.5 py-1.5 text-[12px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+        >
+          Switch model →
+        </button>
+      </div>
     </div>
   );
 }
