@@ -634,11 +634,11 @@ function GeneralPanel() {
   return (
     <div className="flex flex-col gap-8">
       <SettingsSection title="Appearance">
-        <div className="flex flex-col gap-2.5 px-4 py-3.5">
-          <span className="text-[13px] font-medium text-foreground">
+        <div className="flex items-start gap-4 px-4 py-3.5">
+          <span className="w-[104px] shrink-0 pt-3 text-[13px] font-medium text-foreground">
             Theme
           </span>
-          <div className="flex items-start gap-3">
+          <div className="flex flex-1 items-start justify-end gap-3">
             {(["auto", "light", "dark"] as const).map((v) => (
               <ThemeSwatch
                 key={v}
@@ -650,11 +650,11 @@ function GeneralPanel() {
           </div>
         </div>
         <Separator className="ml-4 bg-white/[0.06]" />
-        <div className="flex flex-col gap-2.5 px-4 py-3.5">
-          <span className="text-[13px] font-medium text-foreground">
+        <div className="flex items-start gap-4 px-4 py-3.5">
+          <span className="w-[104px] shrink-0 pt-3 text-[13px] font-medium text-foreground">
             Recording window
           </span>
-          <div className="flex items-start gap-3">
+          <div className="flex flex-1 items-start justify-end gap-3">
             {(["classic", "mini", "none"] as const).map((v) => (
               <RecordingWindowSwatch
                 key={v}
