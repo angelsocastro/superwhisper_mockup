@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { Separator } from "@/components/ui/separator";
+import { cn } from "@/lib/utils";
 
 export function SettingsSection({
   title,
@@ -33,33 +34,49 @@ export function SettingsRow({
   description,
   control,
   last = false,
+  onClick,
 }: {
   icon?: ReactNode;
   label: ReactNode;
   description?: ReactNode;
   control: ReactNode;
   last?: boolean;
+  /** When set the whole row becomes a button — used for rows that navigate. */
+  onClick?: () => void;
 }) {
+  const body = (
+    <div
+      className={cn(
+        "flex w-full items-center gap-3 px-4 py-3.5 text-left",
+        onClick && "transition-colors hover:bg-white/[0.04]"
+      )}
+    >
+      {icon && (
+        <div className="flex h-6 w-6 shrink-0 items-center justify-center text-muted-foreground">
+          {icon}
+        </div>
+      )}
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+        <span className="text-[13px] font-medium text-foreground">{label}</span>
+        {description && (
+          <span className="text-[12px] leading-snug text-muted-foreground">
+            {description}
+          </span>
+        )}
+      </div>
+      {control && <div className="shrink-0">{control}</div>}
+    </div>
+  );
+
   return (
     <div>
-      <div className="flex items-center gap-3 px-4 py-3.5">
-        {icon && (
-          <div className="flex h-6 w-6 shrink-0 items-center justify-center text-muted-foreground">
-            {icon}
-          </div>
-        )}
-        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="text-[13px] font-medium text-foreground">
-            {label}
-          </span>
-          {description && (
-            <span className="text-[12px] leading-snug text-muted-foreground">
-              {description}
-            </span>
-          )}
-        </div>
-        <div className="shrink-0">{control}</div>
-      </div>
+      {onClick ? (
+        <button type="button" onClick={onClick} className="block w-full">
+          {body}
+        </button>
+      ) : (
+        body
+      )}
       {!last && <Separator className="ml-4 bg-white/[0.06]" />}
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { ReactNode } from "react";
-import { X } from "lucide-react";
+import { ChevronLeft, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -11,6 +11,7 @@ export function SettingsWindow({
   active,
   onTabChange,
   onClose,
+  onBack,
   children,
 }: {
   title?: string;
@@ -18,6 +19,8 @@ export function SettingsWindow({
   active: string;
   onTabChange: (key: string) => void;
   onClose: () => void;
+  /** When set, the pane is a sub-page: tabs are hidden and a back chevron shows. */
+  onBack?: () => void;
   children: ReactNode;
 }) {
   return (
@@ -30,6 +33,15 @@ export function SettingsWindow({
         onClick={(e) => e.stopPropagation()}
       >
         <div className="hairline-b relative flex h-11 shrink-0 items-center justify-center bg-[oklch(0.22_0_0)] px-4">
+          {onBack && (
+            <button
+              onClick={onBack}
+              aria-label="Back"
+              className="absolute left-3 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            >
+              <ChevronLeft className="h-[17px] w-[17px]" strokeWidth={2} />
+            </button>
+          )}
           <span className="text-[13px] font-medium text-foreground/70">
             {title}
           </span>
@@ -42,25 +54,32 @@ export function SettingsWindow({
           </button>
         </div>
 
-        <div className="hairline-b flex items-center justify-center gap-1.5 bg-[oklch(0.19_0_0)] px-5 py-3">
-          {tabs.map((tab) => (
-            <button
-              key={tab.key}
-              onClick={() => onTabChange(tab.key)}
-              className={cn(
-                "flex w-[68px] flex-col items-center gap-1 rounded-[7px] py-1.5 text-[11px] font-medium transition-colors",
-                active === tab.key
-                  ? "bg-primary/15 text-primary"
-                  : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground/80"
-              )}
-            >
-              <tab.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
-              {tab.label}
-            </button>
-          ))}
-        </div>
+        {!onBack && (
+          <div className="hairline-b flex items-center justify-center gap-1.5 bg-[oklch(0.19_0_0)] px-5 py-3">
+            {tabs.map((tab) => (
+              <button
+                key={tab.key}
+                onClick={() => onTabChange(tab.key)}
+                className={cn(
+                  "flex w-[68px] flex-col items-center gap-1 rounded-[7px] py-1.5 text-[11px] font-medium transition-colors",
+                  active === tab.key
+                    ? "bg-primary/15 text-primary"
+                    : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground/80"
+                )}
+              >
+                <tab.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                {tab.label}
+              </button>
+            ))}
+          </div>
+        )}
 
-        <div className="h-[460px] overflow-y-auto px-10 py-9">
+        <div
+          className={cn(
+            "overflow-y-auto px-10 py-9",
+            onBack ? "h-[527px]" : "h-[460px]"
+          )}
+        >
           {children}
         </div>
       </div>
