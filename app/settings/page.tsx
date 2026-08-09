@@ -941,7 +941,16 @@ function GeneralPanel({ onOpenSystem }: { onOpenSystem: () => void }) {
         />
       </SettingsSection>
 
-      <SettingsSection title="Application">
+      <SettingsSection title="Startup & updates">
+        <SettingsRow
+          label={
+            <span>
+              Launch on login
+              <InfoDot />
+            </span>
+          }
+          control={<Switch size="sm" defaultChecked={false} />}
+        />
         <SettingsRow
           label="Update application"
           control={<GhostButton>Check for Updates…</GhostButton>}
@@ -953,16 +962,23 @@ function GeneralPanel({ onOpenSystem }: { onOpenSystem: () => void }) {
               <InfoDot />
             </span>
           }
+          last
           control={<Switch size="sm" defaultChecked />}
         />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Privacy & data"
+        description="Recordings stay on this Mac unless you pick a cloud model."
+      >
         <SettingsRow
           label={
             <span>
-              Launch on login
+              Keep recordings for
               <InfoDot />
             </span>
           }
-          control={<Switch size="sm" defaultChecked={false} />}
+          control={<PopupButton value="Forever" />}
         />
         <SettingsRow
           label={
@@ -971,17 +987,9 @@ function GeneralPanel({ onOpenSystem }: { onOpenSystem: () => void }) {
               <InfoDot />
             </span>
           }
-          control={<Switch size="sm" defaultChecked={false} />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Keep recordings for
-              <InfoDot />
-            </span>
-          }
+          description="Send anonymous crash reports to help fix bugs."
           last
-          control={<PopupButton value="Forever" />}
+          control={<Switch size="sm" defaultChecked={false} />}
         />
       </SettingsSection>
 
@@ -1048,37 +1056,47 @@ function ShortcutRow({
 
 function ShortcutsPanel() {
   return (
-    <SettingsSection
-      title="Keyboard Shortcuts"
-      description="Global shortcuts that work anywhere on your Mac."
-    >
-      <ShortcutRow
-        label="Toggle Recording"
-        description="Starts and stops recordings"
-        combo="⌥ Space"
-      />
-      <ShortcutRow
-        label="Cancel Recording"
-        description="Discards the active recording"
-        combo="esc"
-      />
-      <ShortcutRow
-        label="Change mode"
-        description="Activates the mode switcher"
-        combo="⌥ ⇧ K"
-      />
-      <ShortcutRow
-        label="Push to talk"
-        description="Hold to record, release when done"
-        combo="Fn"
-        clearable
-      />
-      <ShortcutRow
-        label="Mouse shortcut"
-        description="Tap to toggle, or hold and release when done"
-        last
-      />
-    </SettingsSection>
+    <div className="flex flex-col gap-8">
+      <SettingsSection
+        title="Recording"
+        description="Global shortcuts that work anywhere on your Mac."
+      >
+        <ShortcutRow
+          label="Toggle Recording"
+          description="Starts and stops recordings"
+          combo="⌥ Space"
+        />
+        <ShortcutRow
+          label="Cancel Recording"
+          description="Discards the active recording"
+          combo="esc"
+        />
+        <ShortcutRow
+          label="Push to talk"
+          description="Hold to record, release when done"
+          combo="Fn"
+          clearable
+          last
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Pointer">
+        <ShortcutRow
+          label="Mouse shortcut"
+          description="Tap to toggle, or hold and release when done"
+          last
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Modes">
+        <ShortcutRow
+          label="Change mode"
+          description="Activates the mode switcher"
+          combo="⌥ ⇧ K"
+          last
+        />
+      </SettingsSection>
+    </div>
   );
 }
 
@@ -1092,7 +1110,10 @@ function SoundPanel() {
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingsSection title="Recording">
+      <SettingsSection
+        title="Microphone"
+        description="How your voice is captured and cleaned up before transcription."
+      >
         <SettingsRow
           label={
             <span>
@@ -1101,15 +1122,6 @@ function SoundPanel() {
             </span>
           }
           control={<Switch size="sm" defaultChecked />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Silence removal
-              <InfoDot />
-            </span>
-          }
-          control={<Switch size="sm" defaultChecked={false} />}
         />
         <SettingsRow
           label={
@@ -1123,16 +1135,30 @@ function SoundPanel() {
         <SettingsRow
           label={
             <span>
+              Silence removal
+              <InfoDot />
+            </span>
+          }
+          last
+          control={<Switch size="sm" defaultChecked={false} />}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="While recording">
+        <SettingsRow
+          label={
+            <span>
               Playback when recording
               <InfoDot />
             </span>
           }
+          description="What happens to audio already playing on your Mac."
           last
           control={<PopupButton value="Pause" />}
         />
       </SettingsSection>
 
-      <SettingsSection title="Sound Effects">
+      <SettingsSection title="Sound effects">
         <SettingsRow
           label="Sound effects"
           control={
@@ -1211,20 +1237,48 @@ function ModelsPanel() {
     );
 
   return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center gap-2">
-        <div className="hairline flex min-w-0 flex-1 items-center gap-2 rounded-[7px] bg-white/[0.05] px-2.5 py-1.5">
-          <Search
-            className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
-            strokeWidth={2}
-          />
-          <input
-            value={query}
-            onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search models"
-            className="min-w-0 flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none"
-          />
+    <div className="flex flex-col gap-8">
+      <SettingsSection
+        title="In use"
+        description="What Super picks for you right now. You don't have to change any of this."
+      >
+        <SettingsRow
+          label="Voice model"
+          description="Turns your speech into raw text"
+          control={<PopupButton value="S1-Voice" />}
+        />
+        <SettingsRow
+          label="Language model"
+          description="Cleans up wording, punctuation and formatting"
+          last
+          control={<PopupButton value="Sonnet 4.5" />}
+        />
+      </SettingsSection>
+
+      <div className="flex flex-col gap-4">
+        <div className="flex flex-col gap-1">
+          <h2 className="text-[15px] font-semibold text-foreground">
+            Model library
+          </h2>
+          <p className="text-[12px] leading-relaxed text-muted-foreground">
+            Every model available to you. Offline ones download to your Mac and
+            keep working without internet.
+          </p>
         </div>
+
+        <div className="flex items-center gap-2">
+          <div className="hairline flex min-w-0 flex-1 items-center gap-2 rounded-[7px] bg-white/[0.05] px-2.5 py-1.5">
+            <Search
+              className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
+              strokeWidth={2}
+            />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search models"
+              className="min-w-0 flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
+          </div>
         <button
           aria-label="Filter"
           className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
@@ -1335,6 +1389,7 @@ function ModelsPanel() {
             </div>
           );
         })}
+        </div>
       </div>
     </div>
   );
