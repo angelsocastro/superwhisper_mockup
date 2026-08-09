@@ -199,29 +199,38 @@ function LocalModelBanner({ onOpenModels }: { onOpenModels: () => void }) {
   if (dismissed) return null;
 
   return (
-    <div className="hairline relative flex items-start gap-3 rounded-[10px] bg-[oklch(0.24_0_0)] px-4 py-3.5">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-primary/15 text-primary">
-        <HardDrive className="h-4 w-4" strokeWidth={2} />
+    <div className="hairline relative flex overflow-hidden rounded-[14px] bg-card">
+      <div className="relative flex w-[132px] shrink-0 items-center justify-center overflow-hidden bg-gradient-to-br from-[#9061f9] via-[#7c3aed] to-[#4c1d95]">
+        <div className="absolute -top-8 -left-8 h-28 w-28 rounded-full bg-white/15 blur-2xl" />
+        <div className="absolute -right-8 -bottom-10 h-32 w-32 rounded-full bg-black/25 blur-2xl" />
+        <div className="relative flex h-14 w-14 items-center justify-center rounded-[16px] bg-white/15 ring-1 ring-white/25 backdrop-blur-sm">
+          <HardDrive className="h-7 w-7 text-white" strokeWidth={1.5} />
+        </div>
       </div>
-      <div className="flex flex-1 flex-col gap-1 pr-5">
-        <span className="text-[13px] font-medium text-foreground">
-          Try an on-device model
+
+      <div className="flex flex-1 flex-col justify-center gap-1.5 px-5 py-4">
+        <span className="text-[11px] font-semibold tracking-wide text-[#c4a3fb] uppercase">
+          On-device model
         </span>
-        <span className="text-[12px] leading-relaxed text-muted-foreground">
+        <p className="text-[13px] font-semibold text-foreground">
+          No internet? No problem.
+        </p>
+        <p className="text-[12px] leading-relaxed text-muted-foreground">
           Local models keep everything private and work fully offline — no
           internet required.
-        </span>
+        </p>
         <button
           onClick={onOpenModels}
-          className="mt-1.5 w-fit text-[12px] font-medium text-primary hover:brightness-125"
+          className="mt-1 w-fit text-[12px] font-medium text-primary hover:brightness-125"
         >
           Switch model →
         </button>
       </div>
+
       <button
         onClick={() => setDismissed(true)}
         aria-label="Dismiss"
-        className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+        className="absolute top-2.5 right-2.5 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
       >
         <X className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
