@@ -21,6 +21,7 @@ import { MacWindow } from "@/components/mac-window";
 import { SettingsWindow } from "@/components/settings-window";
 import { DetailModal } from "@/components/detail-modal";
 import { SettingsSection, SettingsRow } from "@/components/settings-parts";
+import { InlineEdit } from "@/components/inline-edit";
 import { Switch } from "@/components/ui/switch";
 import { SegmentedControl } from "@/components/segmented-control";
 import { cn } from "@/lib/utils";
@@ -140,7 +141,7 @@ function DailyNav({
   onOpenWhatsNew: (item: WhatsNewItem) => void;
 }) {
   return (
-    <aside className="vibrancy hairline flex w-[230px] shrink-0 flex-col px-3 py-6">
+    <aside className="flex w-[230px] shrink-0 flex-col px-3 py-6">
       <div className="flex flex-col gap-1">
         {DAILY_USE.map((item) => (
           <button
@@ -294,48 +295,120 @@ function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
   );
 }
 
+type VocabEntry = { id: string; word: string; to?: string };
+
+let vocabIdCounter = 0;
+function nextVocabId() {
+  vocabIdCounter += 1;
+  return `new-${vocabIdCounter}`;
+}
+
 function VocabularyPanel() {
-  const [entries, setEntries] = useState<{ word: string; to?: string }[]>([
-    { word: "call" },
-    { word: "controll" },
-    { word: "json" },
-    { word: "jsons" },
-    { word: "livekit" },
-    { word: "mockups" },
-    { word: "super whisper", to: "Superwhisper" },
-    { word: "Superwhisper" },
-    { word: "telnyx" },
+  const [entries, setEntries] = useState<VocabEntry[]>([
+    { id: "seed-call", word: "call" },
+    { id: "seed-controll", word: "controll" },
+    { id: "seed-json", word: "json" },
+    { id: "seed-jsons", word: "jsons" },
+    { id: "seed-livekit", word: "livekit" },
+    { id: "seed-mockups", word: "mockups" },
+    { id: "seed-super-whisper", word: "super whisper", to: "Superwhisper" },
+    { id: "seed-superwhisper", word: "Superwhisper" },
+    { id: "seed-telnyx", word: "telnyx" },
   ]);
   const [draft, setDraft] = useState("");
+  const [replacementDraft, setReplacementDraft] = useState<string | null>(
+    null
+  );
 
   const addWord = () => {
     const word = draft.trim();
     if (!word) return;
-    setEntries((prev) => [{ word }, ...prev]);
+    setEntries((prev) => [{ id: nextVocabId(), word }, ...prev]);
     setDraft("");
+    setReplacementDraft(null);
   };
+
+  const addReplacement = () => {
+    const word = draft.trim();
+    const to = (replacementDraft ?? "").trim();
+    if (!word || !to) return;
+    setEntries((prev) => [{ id: nextVocabId(), word, to }, ...prev]);
+    setDraft("");
+    setReplacementDraft(null);
+  };
+
+  const updateWord = (id: string, word: string) =>
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, word } : e)));
+
+  const updateTarget = (id: string, to: string) =>
+    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, to } : e)));
 
   return (
     <SettingsSection
       title="Vocabulary"
-      description="Add names, jargon, or shorthand — plain words are recognized as-is, and words with an arrow are expanded automatically as you dictate."
+      description="Add names, jargon, or shorthand — plain words are recognized as-is, and words with an arrow are expanded automatically as you dictate. Click any entry to edit it in place."
     >
-      <div className="hairline-b flex items-center gap-2 px-4 py-3">
-        <input
-          value={draft}
-          onChange={(e) => setDraft(e.target.value)}
-          onKeyDown={(e) => e.key === "Enter" && addWord()}
-          placeholder="New word or replacement"
-          className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
-        />
-        <button
-          onClick={addWord}
-          disabled={!draft.trim()}
-          className="shrink-0 text-[12px] font-medium text-primary hover:brightness-125 disabled:pointer-events-none disabled:opacity-40"
-        >
-          Add word
-        </button>
+      <div className="hairline-b flex flex-col gap-2 px-4 py-3">
+        <div className="flex items-center gap-2">
+          <input
+            value={draft}
+            onChange={(e) => setDraft(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              if (replacementDraft !== null) addReplacement();
+              else addWord();
+            }}
+            placeholder="New word or replacement"
+            className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+          />
+          <button
+            onClick={addWord}
+            disabled={!draft.trim()}
+            className="shrink-0 text-[12px] font-medium text-primary hover:brightness-125 disabled:pointer-events-none disabled:opacity-40"
+          >
+            Add word
+          </button>
+        </div>
+
+        {replacementDraft === null ? (
+          <button
+            onClick={() => setReplacementDraft("")}
+            disabled={!draft.trim()}
+            className="self-start text-[12px] font-medium text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
+          >
+            + Add as a replacement instead
+          </button>
+        ) : (
+          <div className="flex items-center gap-2 pl-1">
+            <span className="text-[12px] text-muted-foreground">→</span>
+            <input
+              autoFocus
+              value={replacementDraft}
+              onChange={(e) => setReplacementDraft(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") addReplacement();
+                if (e.key === "Escape") setReplacementDraft(null);
+              }}
+              placeholder="Replace with…"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+            />
+            <button
+              onClick={addReplacement}
+              disabled={!draft.trim() || !replacementDraft.trim()}
+              className="shrink-0 text-[12px] font-medium text-primary hover:brightness-125 disabled:pointer-events-none disabled:opacity-40"
+            >
+              Add
+            </button>
+            <button
+              onClick={() => setReplacementDraft(null)}
+              className="shrink-0 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        )}
       </div>
+
       {entries.length === 0 && (
         <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
           No words yet.
@@ -343,14 +416,29 @@ function VocabularyPanel() {
       )}
       {entries.map((entry, i) => (
         <SettingsRow
-          key={entry.word}
-          label={entry.word}
-          description={entry.to ? `→ ${entry.to}` : undefined}
+          key={entry.id}
+          label={
+            <InlineEdit
+              value={entry.word}
+              onChange={(word) => updateWord(entry.id, word)}
+            />
+          }
+          description={
+            entry.to !== undefined ? (
+              <span className="flex items-center gap-1">
+                →
+                <InlineEdit
+                  value={entry.to}
+                  onChange={(to) => updateTarget(entry.id, to)}
+                />
+              </span>
+            ) : undefined
+          }
           last={i === entries.length - 1}
           control={
             <button
               onClick={() =>
-                setEntries((prev) => prev.filter((e) => e.word !== entry.word))
+                setEntries((prev) => prev.filter((e) => e.id !== entry.id))
               }
               className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
             >
@@ -639,7 +727,7 @@ export default function SettingsPage() {
   return (
     <main className="flex min-h-screen items-center justify-center bg-[oklch(0.1_0_0)] p-10">
       <MacWindow title={TITLES[active]} width="1020px" height="700px">
-        <div className="flex h-full">
+        <div className="flex h-full gap-2 bg-[oklch(0.15_0_0)] p-2">
           <DailyNav
             active={active}
             onSelect={setActive}
@@ -647,9 +735,11 @@ export default function SettingsPage() {
             whatsNew={whatsNewStack}
             onOpenWhatsNew={openWhatsNew}
           />
-          <div className="min-w-0 flex-1 overflow-y-auto bg-background px-14 py-12">
-            <div className="mx-auto flex max-w-[560px] flex-col gap-8">
-              <DailyPanel onOpenModels={openModelsSettings} />
+          <div className="hairline min-w-0 flex-1 overflow-hidden rounded-[10px] bg-background">
+            <div className="h-full overflow-y-auto px-14 py-12">
+              <div className="mx-auto flex max-w-[560px] flex-col gap-8">
+                <DailyPanel onOpenModels={openModelsSettings} />
+              </div>
             </div>
           </div>
         </div>

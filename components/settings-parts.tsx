@@ -35,8 +35,8 @@ export function SettingsRow({
   last = false,
 }: {
   icon?: ReactNode;
-  label: string;
-  description?: string;
+  label: ReactNode;
+  description?: ReactNode;
   control: ReactNode;
   last?: boolean;
 }) {
