@@ -14,6 +14,7 @@ import {
   Cloud,
   HardDrive,
   Sparkles,
+  X,
   type LucideIcon,
 } from "lucide-react";
 import { MacWindow } from "@/components/mac-window";
@@ -49,27 +50,25 @@ const WHATS_NEW_SEED: WhatsNewItem[] = [
   },
 ];
 
-type DailyKey = "home" | "vocabulary" | "shortcuts";
-type SettingsKey = "general" | "sound" | "models" | "advanced" | "history";
+type DailyKey = "home" | "vocabulary";
+type SettingsKey = "general" | "shortcuts" | "sound" | "models" | "advanced";
 
 const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
   { key: "home", label: "Home", icon: HomeIcon },
   { key: "vocabulary", label: "Vocabulary", icon: BookOpen },
-  { key: "shortcuts", label: "Shortcuts", icon: Keyboard },
 ];
 
 const SETTINGS_TABS: { key: SettingsKey; label: string; icon: LucideIcon }[] = [
   { key: "general", label: "General", icon: SettingsIcon },
+  { key: "shortcuts", label: "Shortcuts", icon: Keyboard },
   { key: "sound", label: "Sound", icon: Volume2 },
   { key: "models", label: "Models", icon: BrainCircuit },
   { key: "advanced", label: "Advanced", icon: Wrench },
-  { key: "history", label: "History", icon: HistoryIcon },
 ];
 
 const TITLES: Record<DailyKey, string> = {
   home: "Superwhisper",
   vocabulary: "Vocabulary",
-  shortcuts: "Shortcuts",
 };
 
 function WhatsNewStack({
@@ -194,7 +193,48 @@ function StatTile({ value, label }: { value: string; label: string }) {
   );
 }
 
-function HomePanel() {
+function LocalModelBanner({ onOpenModels }: { onOpenModels: () => void }) {
+  const [dismissed, setDismissed] = useState(false);
+  if (dismissed) return null;
+
+  return (
+    <div className="hairline relative flex items-start gap-3 rounded-[10px] bg-[oklch(0.24_0_0)] px-4 py-3.5">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-primary/15 text-primary">
+        <HardDrive className="h-4 w-4" strokeWidth={2} />
+      </div>
+      <div className="flex flex-1 flex-col gap-1 pr-5">
+        <span className="text-[13px] font-medium text-foreground">
+          Try an on-device model
+        </span>
+        <span className="text-[12px] leading-relaxed text-muted-foreground">
+          Local models keep everything private and work fully offline — no
+          internet required.
+        </span>
+        <button
+          onClick={onOpenModels}
+          className="mt-1.5 w-fit text-[12px] font-medium text-primary hover:brightness-125"
+        >
+          Switch model →
+        </button>
+      </div>
+      <button
+        onClick={() => setDismissed(true)}
+        aria-label="Dismiss"
+        className="absolute top-3 right-3 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+      >
+        <X className="h-3.5 w-3.5" strokeWidth={2} />
+      </button>
+    </div>
+  );
+}
+
+function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
+  const history = [
+    { text: "Remind the team the deploy is at 4pm.", time: "2m ago" },
+    { text: "Draft a reply saying I'll follow up tomorrow.", time: "1h ago" },
+    { text: "Add oat milk and coffee to the grocery list.", time: "Yesterday" },
+  ];
+
   return (
     <div className="flex flex-col gap-10">
       <section className="flex flex-col gap-5">
@@ -205,6 +245,8 @@ function HomePanel() {
           <StatTile value="1 hour" label="Saved" />
         </div>
       </section>
+
+      <LocalModelBanner onOpenModels={onOpenModels} />
 
       <section className="flex flex-col gap-4">
         <h2 className="text-[15px] font-semibold text-foreground">
@@ -228,6 +270,24 @@ function HomePanel() {
             control={null}
             last
           />
+        </div>
+      </section>
+
+      <section className="flex flex-col gap-4">
+        <h2 className="flex items-center gap-2 text-[15px] font-semibold text-foreground">
+          <HistoryIcon className="h-4 w-4 text-muted-foreground" strokeWidth={2} />
+          History
+        </h2>
+        <div className="hairline overflow-hidden rounded-[10px] bg-card">
+          {history.map((item, i) => (
+            <SettingsRow
+              key={item.text}
+              label={item.text}
+              description={item.time}
+              last={i === history.length - 1}
+              control={null}
+            />
+          ))}
         </div>
       </section>
     </div>
@@ -331,10 +391,12 @@ function ShortcutsPanel() {
   );
 }
 
-const DAILY_PANELS: Record<DailyKey, () => React.ReactNode> = {
+const DAILY_PANELS: Record<
+  DailyKey,
+  (props: { onOpenModels: () => void }) => React.ReactNode
+> = {
   home: HomePanel,
   vocabulary: VocabularyPanel,
-  shortcuts: ShortcutsPanel,
 };
 
 function GeneralPanel() {
@@ -446,7 +508,7 @@ function ModelsPanel() {
   return (
     <SettingsSection
       title="Models"
-      description="Super picks the best available model for you automatically. Most people never need to open this."
+      description="Super picks the best cloud model for you automatically. Switch to an on-device model if you'd rather keep everything local."
     >
       <SettingsRow
         label="S1-Voice"
@@ -537,44 +599,20 @@ function AdvancedPanel() {
   );
 }
 
-function HistoryPanel() {
-  const items = [
-    { text: "Remind the team the deploy is at 4pm.", time: "2m ago" },
-    { text: "Draft a reply saying I'll follow up tomorrow.", time: "1h ago" },
-    { text: "Add oat milk and coffee to the grocery list.", time: "Yesterday" },
-  ];
-  return (
-    <SettingsSection
-      title="History"
-      description="Your recent dictations. Nothing is sent anywhere unless you choose a cloud model."
-    >
-      {items.map((item, i) => (
-        <SettingsRow
-          key={item.text}
-          label={item.text}
-          description={item.time}
-          last={i === items.length - 1}
-          control={null}
-        />
-      ))}
-    </SettingsSection>
-  );
-}
-
 const SETTINGS_PANELS: Record<SettingsKey, () => React.ReactNode> = {
   general: GeneralPanel,
+  shortcuts: ShortcutsPanel,
   sound: SoundPanel,
   models: ModelsPanel,
   advanced: AdvancedPanel,
-  history: HistoryPanel,
 };
 
 const SETTINGS_TITLES: Record<SettingsKey, string> = {
   general: "General",
+  shortcuts: "Shortcuts",
   sound: "Sound",
   models: "Models",
   advanced: "Advanced",
-  history: "History",
 };
 
 export default function SettingsPage() {
@@ -593,6 +631,11 @@ export default function SettingsPage() {
     setWhatsNewStack((prev) => prev.filter((i) => i.id !== item.id));
   };
 
+  const openModelsSettings = () => {
+    setSettingsTab("models");
+    setSettingsOpen(true);
+  };
+
   return (
     <main className="flex min-h-screen items-center justify-center bg-[oklch(0.1_0_0)] p-10">
       <MacWindow title={TITLES[active]} width="1020px" height="700px">
@@ -606,7 +649,7 @@ export default function SettingsPage() {
           />
           <div className="min-w-0 flex-1 overflow-y-auto bg-background px-14 py-12">
             <div className="mx-auto flex max-w-[560px] flex-col gap-8">
-              <DailyPanel />
+              <DailyPanel onOpenModels={openModelsSettings} />
             </div>
           </div>
         </div>
