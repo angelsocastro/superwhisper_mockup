@@ -15,6 +15,8 @@ import {
   GripVertical,
   ChevronUp,
   Check,
+  Copy,
+  Play,
   Pin,
   Lock,
   EyeOff,
@@ -352,20 +354,58 @@ const MODEL_LIBRARY: ModelRow[] = [
   },
 ];
 
-const HISTORY_GROUPS: { label: string; items: string[] }[] = [
+type HistoryItem = {
+  id: string;
+  /** What landed in the app after the language model cleaned it up. */
+  text: string;
+  /** The raw transcript, only kept when the model actually changed something. */
+  original?: string;
+  seconds: number;
+  /** Only long recordings have anything to segment. */
+  segments?: { at: string; text: string }[];
+};
+
+const HISTORY_GROUPS: { label: string; items: HistoryItem[] }[] = [
   {
     label: "Today",
     items: [
-      "Remind the team the deploy is at 4pm.",
-      "Draft a reply saying I'll follow up tomorrow.",
-      "Add a section about pricing to the proposal and keep the tone friendly.",
+      {
+        id: "h1",
+        text: "Remind the team the deploy is at 4pm.",
+        original: "remind the team the deploy is at 4pm",
+        seconds: 4,
+      },
+      {
+        id: "h2",
+        text: "Draft a reply saying I'll follow up tomorrow.",
+        seconds: 3,
+      },
+      {
+        id: "h3",
+        text: "Add a section about pricing to the proposal and keep the tone friendly.",
+        original:
+          "add a section about pricing to the proposal and um keep the tone friendly",
+        seconds: 18,
+        segments: [
+          { at: "0:00", text: "Add a section about pricing to the proposal" },
+          { at: "0:11", text: "and keep the tone friendly." },
+        ],
+      },
     ],
   },
   {
     label: "Yesterday",
     items: [
-      "Add oat milk and coffee to the grocery list.",
-      "Tell Marta I'm running ten minutes late.",
+      {
+        id: "h4",
+        text: "Add oat milk and coffee to the grocery list.",
+        seconds: 3,
+      },
+      {
+        id: "h5",
+        text: "Tell Marta I'm running ten minutes late.",
+        seconds: 2,
+      },
     ],
   },
 ];
@@ -1048,13 +1088,161 @@ function LocalModelBanner({ onOpenModels }: { onOpenModels: () => void }) {
   );
 }
 
+function Waveform() {
+  const bars = [4, 9, 6, 12, 7, 10, 5, 13, 8, 6, 11, 7, 9, 5, 10, 6, 12, 8, 5, 9];
+  return (
+    <div className="flex flex-1 items-center gap-[2px]">
+      {bars.map((h, i) => (
+        <span
+          key={i}
+          className="w-[2px] shrink-0 rounded-full bg-foreground/25"
+          style={{ height: h }}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Clicking copies — getting the text back is the job people come here for.
+ * Everything else waits behind a disclosure, and the variant switcher only
+ * appears when there's actually a second version to look at: a four-second
+ * dictation has no segments and often no AI edit to undo.
+ */
+function HistoryRow({ item }: { item: HistoryItem }) {
+  const [copied, setCopied] = useState(false);
+  const [open, setOpen] = useState(false);
+  const [variant, setVariant] = useState<"clean" | "original" | "segments">(
+    "clean"
+  );
+
+  const hasOriginal = !!item.original && item.original !== item.text;
+  const hasSegments = (item.segments?.length ?? 0) > 1;
+  const showVariants = hasOriginal || hasSegments;
+
+  const copy = () => {
+    setCopied(true);
+    window.setTimeout(() => setCopied(false), 1200);
+  };
+
+  return (
+    <div className="hairline group overflow-hidden rounded-[9px] bg-card">
+      <div className="flex items-center gap-2 px-3.5 py-2.5">
+        <button
+          onClick={copy}
+          title="Click to copy"
+          className="min-w-0 flex-1 text-left text-[13px] leading-snug text-foreground/90"
+        >
+          {item.text}
+        </button>
+
+        <span
+          className={cn(
+            "shrink-0 text-[11px] font-medium text-primary transition-opacity",
+            copied ? "opacity-100" : "opacity-0"
+          )}
+        >
+          Copied
+        </span>
+
+        <div className="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover:opacity-100 focus-within:opacity-100">
+          <button
+            onClick={copy}
+            aria-label="Copy"
+            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+          >
+            <Copy className="h-3.5 w-3.5" strokeWidth={2} />
+          </button>
+          <button
+            onClick={() => setOpen((v) => !v)}
+            aria-label={open ? "Hide details" : "Show details"}
+            className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+          >
+            <ChevronDown
+              className={cn("h-4 w-4 transition-transform", open && "rotate-180")}
+              strokeWidth={2}
+            />
+          </button>
+        </div>
+      </div>
+
+      {open && (
+        <div className="flex flex-col gap-3 border-t border-line px-3.5 py-3">
+          <div className="hairline flex items-center gap-2.5 rounded-[7px] bg-fill px-2.5 py-2">
+            <button
+              aria-label="Play"
+              className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Play className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
+            <Waveform />
+            <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+              0:{String(item.seconds).padStart(2, "0")}
+            </span>
+          </div>
+
+          {showVariants && (
+            <>
+              <SegmentedControl
+                value={variant}
+                onValueChange={(v) =>
+                  setVariant(v as "clean" | "original" | "segments")
+                }
+                options={[
+                  { value: "clean", label: "Cleaned up" },
+                  ...(hasOriginal
+                    ? [{ value: "original", label: "Original" }]
+                    : []),
+                  ...(hasSegments
+                    ? [{ value: "segments", label: "Timestamps" }]
+                    : []),
+                ]}
+              />
+
+              {variant === "original" && (
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
+                  {item.original}
+                </p>
+              )}
+              {variant === "segments" && (
+                <div className="flex flex-col gap-2">
+                  {item.segments!.map((seg) => (
+                    <div key={seg.at} className="flex gap-3">
+                      <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums">
+                        {seg.at}
+                      </span>
+                      <span className="text-[13px] leading-snug text-foreground/90">
+                        {seg.text}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </>
+          )}
+
+          <div className="flex items-center gap-1">
+            <GhostButton>Re-run</GhostButton>
+            <button
+              aria-label="Delete"
+              className="ml-auto flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
   const [query, setQuery] = useState("");
 
   const groups = HISTORY_GROUPS.map((g) => ({
     ...g,
-    items: g.items.filter((t) =>
-      t.toLowerCase().includes(query.trim().toLowerCase()),
+    items: g.items.filter((it) =>
+      it.text.toLowerCase().includes(query.trim().toLowerCase()),
     ),
   })).filter((g) => g.items.length > 0);
 
@@ -1114,13 +1302,8 @@ function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
                 {group.label}
               </span>
               <div className="flex flex-col gap-1.5">
-                {group.items.map((text) => (
-                  <div
-                    key={text}
-                    className="hairline rounded-[9px] bg-card px-3.5 py-2.5 text-[13px] leading-snug text-foreground/90"
-                  >
-                    {text}
-                  </div>
+                {group.items.map((item) => (
+                  <HistoryRow key={item.id} item={item} />
                 ))}
               </div>
             </div>
@@ -3567,6 +3750,21 @@ export default function SettingsPage() {
             {/* Status bar sits in the chrome gutter, outside the pane, so the
                 sidebar can run the full height of the window. */}
             <div className="flex h-8 shrink-0 items-center justify-end gap-1 px-1">
+              {/* The setup guide is temporary — it disappears once you're set
+                  up — so it sits apart from the mode and microphone, which are
+                  permanent facts about the next thing you dictate. */}
+              {!setupOpen && !allSetupDone && (
+                <button
+                  onClick={() => setSetupOpen(true)}
+                  className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+                >
+                  <CircleCheck className="h-[13px] w-[13px]" strokeWidth={2} />
+                  Setup guide
+                  <span className="tabular-nums">
+                    {setupDone}/{setupTasks.length}
+                  </span>
+                </button>
+              )}
               {/* Which mode is live is a glanceable fact, not a place to
                   navigate to — so it sits here rather than in the sidebar. */}
               <button
@@ -3590,18 +3788,6 @@ export default function SettingsPage() {
                 )}
                 {activeMode?.name ?? "Super"}
               </button>
-              {!setupOpen && !allSetupDone && (
-                <button
-                  onClick={() => setSetupOpen(true)}
-                  className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-                >
-                  <CircleCheck className="h-[13px] w-[13px]" strokeWidth={2} />
-                  Setup guide
-                  <span className="tabular-nums">
-                    {setupDone}/{setupTasks.length}
-                  </span>
-                </button>
-              )}
               <button
                 onClick={() => setMicMenuOpen((v) => !v)}
                 className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
