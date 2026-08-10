@@ -41,6 +41,11 @@ import {
   CircleCheck,
   Circle,
   ChevronDown,
+  Building2,
+  Minus,
+  Laptop,
+  Monitor,
+  Smartphone,
   CircleUser,
   CreditCard,
   ExternalLink,
@@ -98,33 +103,104 @@ const WHATS_NEW_SEED: WhatsNewItem[] = [
   },
 ];
 
+/* --- Super is the base. A mode is a diff against it, never a full config. --- */
+
+const ALL_LANGUAGES = [
+  "English",
+  "Spanish",
+  "German",
+  "French",
+  "Portuguese",
+  "Dutch",
+  "Italian",
+  "Japanese",
+  "Chinese",
+];
+
+type BaseSettings = {
+  languages: string[];
+  autocapitalize: boolean;
+  removeFillers: boolean;
+  pasteResult: boolean;
+  autoSend: boolean;
+  clipboard: string;
+  simulateKeypresses: boolean;
+  systemAudio: boolean;
+  identifySpeakers: boolean;
+  voiceModel: string;
+  languageModel: string;
+  playback: string;
+};
+
+const BASE_DEFAULTS: BaseSettings = {
+  languages: ["Spanish", "English"],
+  autocapitalize: true,
+  removeFillers: true,
+  pasteResult: true,
+  autoSend: false,
+  clipboard: "Default",
+  simulateKeypresses: false,
+  systemAudio: false,
+  identifySpeakers: false,
+  voiceModel: "S1-Voice",
+  languageModel: "Sonnet 4.5",
+  playback: "Pause",
+};
+
+type SettingKey = keyof BaseSettings;
+
+type SettingDef = {
+  key: SettingKey;
+  label: string;
+  group: string;
+  kind: "switch" | "choice" | "languages";
+  choices?: string[];
+};
+
+/** Every setting is overridable by construction — which is what stops
+ *  "make X per-mode" from being a feature request nine times over. */
+const SETTING_DEFS: SettingDef[] = [
+  { key: "languages", label: "Languages", group: "Language", kind: "languages" },
+  { key: "autocapitalize", label: "Autocapitalize", group: "Formatting", kind: "switch" },
+  { key: "removeFillers", label: "Remove filler words", group: "Formatting", kind: "switch" },
+  { key: "pasteResult", label: "Paste result text", group: "Output", kind: "switch" },
+  { key: "autoSend", label: "Hold shift to auto-send", group: "Output", kind: "switch" },
+  { key: "clipboard", label: "Clipboard behaviour", group: "Output", kind: "choice", choices: ["Default", "Preserve", "Skip"] },
+  { key: "simulateKeypresses", label: "Simulate keypresses", group: "Output", kind: "switch" },
+  { key: "systemAudio", label: "Record from system audio", group: "Capture", kind: "switch" },
+  { key: "identifySpeakers", label: "Identify speakers", group: "Capture", kind: "switch" },
+  { key: "playback", label: "Playback when recording", group: "Capture", kind: "choice", choices: ["Pause", "Mute", "Keep playing"] },
+  { key: "voiceModel", label: "Voice model", group: "Models", kind: "choice", choices: ["S1-Voice", "Cohere Transcribe", "Nova 3"] },
+  { key: "languageModel", label: "Language model", group: "Models", kind: "choice", choices: ["Sonnet 4.5", "Haiku 4.5", "S1-Language"] },
+];
+
+function formatSettingValue(value: BaseSettings[SettingKey]): string {
+  if (typeof value === "boolean") return value ? "On" : "Off";
+  if (Array.isArray(value)) return value.join(", ");
+  return value;
+}
+
 type ModeItem = {
   id: string;
   name: string;
-  preset: string;
-  language: string;
-  voiceModel: string;
-  languageModel: string;
+  apps: string[];
+  /** Only what this mode changes. Anything absent follows Super. */
+  overrides: Partial<BaseSettings>;
   active?: boolean;
 };
 
 const MODES_SEED: ModeItem[] = [
   {
-    id: "super",
-    name: "Super",
-    preset: "Super",
-    language: "Spanish",
-    voiceModel: "Ultra",
-    languageModel: "Sonnet 4.5",
-    active: true,
+    id: "email",
+    name: "Email",
+    apps: ["Mail", "Spark"],
+    overrides: { languages: ["English"], autoSend: true },
   },
   {
-    id: "english",
-    name: "English",
-    preset: "Default",
-    language: "English",
-    voiceModel: "Ultra",
-    languageModel: "S1-Language",
+    id: "meetings",
+    name: "Meetings",
+    apps: ["Zoom"],
+    overrides: { systemAudio: true, identifySpeakers: true, pasteResult: false },
   },
 ];
 
@@ -135,7 +211,8 @@ const PROVIDER_STYLE: Record<Provider, { label: string; className: string }> = {
   anthropic: { label: "A", className: "bg-[#d4a27f] text-[#2b1a10]" },
   cohere: {
     label: "C",
-    className: "bg-gradient-to-br from-[#39c5a0] via-[#a78bfa] to-[#f472b6] text-white",
+    className:
+      "bg-gradient-to-br from-[#39c5a0] via-[#a78bfa] to-[#f472b6] text-white",
   },
   deepgram: { label: "D", className: "bg-[#e8443a] text-white" },
 };
@@ -151,17 +228,87 @@ type ModelRow = {
 };
 
 const MODEL_LIBRARY: ModelRow[] = [
-  { id: "s1-language", name: "S1-Language", provider: "sw", kind: "language", speed: 5, isNew: true },
-  { id: "s1-mini", name: "S1-Mini", provider: "sw", kind: "language", speed: 4, size: "462 MB" },
-  { id: "s1-voice", name: "S1-Voice", provider: "sw", kind: "voice", speed: 5, isNew: true },
-  { id: "haiku", name: "Haiku 4.5", provider: "anthropic", kind: "language", speed: 5 },
-  { id: "sonnet45", name: "Sonnet 4.5", provider: "anthropic", kind: "language", speed: 4 },
-  { id: "sonnet46", name: "Sonnet 4.6", provider: "anthropic", kind: "language", speed: 4 },
-  { id: "sonnet5", name: "Sonnet 5", provider: "anthropic", kind: "language", speed: 5 },
-  { id: "cohere", name: "Cohere Transcribe", provider: "cohere", kind: "voice", speed: 4, size: "1.3 GB" },
-  { id: "nova2", name: "Nova 2", provider: "deepgram", kind: "voice", speed: 3 },
-  { id: "nova3", name: "Nova 3", provider: "deepgram", kind: "voice", speed: 4 },
-  { id: "nova-medical", name: "Nova Medical", provider: "deepgram", kind: "voice", speed: 3 },
+  {
+    id: "s1-language",
+    name: "S1-Language",
+    provider: "sw",
+    kind: "language",
+    speed: 5,
+    isNew: true,
+  },
+  {
+    id: "s1-mini",
+    name: "S1-Mini",
+    provider: "sw",
+    kind: "language",
+    speed: 4,
+    size: "462 MB",
+  },
+  {
+    id: "s1-voice",
+    name: "S1-Voice",
+    provider: "sw",
+    kind: "voice",
+    speed: 5,
+    isNew: true,
+  },
+  {
+    id: "haiku",
+    name: "Haiku 4.5",
+    provider: "anthropic",
+    kind: "language",
+    speed: 5,
+  },
+  {
+    id: "sonnet45",
+    name: "Sonnet 4.5",
+    provider: "anthropic",
+    kind: "language",
+    speed: 4,
+  },
+  {
+    id: "sonnet46",
+    name: "Sonnet 4.6",
+    provider: "anthropic",
+    kind: "language",
+    speed: 4,
+  },
+  {
+    id: "sonnet5",
+    name: "Sonnet 5",
+    provider: "anthropic",
+    kind: "language",
+    speed: 5,
+  },
+  {
+    id: "cohere",
+    name: "Cohere Transcribe",
+    provider: "cohere",
+    kind: "voice",
+    speed: 4,
+    size: "1.3 GB",
+  },
+  {
+    id: "nova2",
+    name: "Nova 2",
+    provider: "deepgram",
+    kind: "voice",
+    speed: 3,
+  },
+  {
+    id: "nova3",
+    name: "Nova 3",
+    provider: "deepgram",
+    kind: "voice",
+    speed: 4,
+  },
+  {
+    id: "nova-medical",
+    name: "Nova Medical",
+    provider: "deepgram",
+    kind: "voice",
+    speed: 3,
+  },
 ];
 
 const HISTORY_GROUPS: { label: string; items: string[] }[] = [
@@ -201,7 +348,7 @@ function useResolvedTheme(pref: ThemePref) {
   const systemDark = useSyncExternalStore(
     subscribeToScheme,
     () => window.matchMedia(DARK_SCHEME).matches,
-    () => false
+    () => false,
   );
 
   if (pref === "light") return "light";
@@ -219,8 +366,119 @@ type SettingsKey =
   | "sound"
   | "models"
   | "modes";
+/**
+ * How the signed-in account was provisioned. Not a user preference — it follows
+ * from how they authenticated, so the app only reads it.
+ */
+type AccountKind = "individual" | "org";
+/** Only owners and admins can act on the organization's subscription. */
+type OrgRole = "owner" | "admin" | "member";
+
+type Account = {
+  kind: AccountKind;
+  email: string;
+  /** Present when kind === "org". */
+  org?: { name: string; role: OrgRole };
+};
+
+/** Stand-in for whatever the session endpoint returns. */
+const ACCOUNTS: Record<string, Account> = {
+  individual: { kind: "individual", email: "angel@example.com" },
+  member: {
+    kind: "org",
+    email: "angel@acme.com",
+    org: { name: "Acme Inc", role: "member" },
+  },
+  admin: {
+    kind: "org",
+    email: "angel@acme.com",
+    org: { name: "Acme Inc", role: "admin" },
+  },
+};
+
+type DeviceItem = {
+  id: string;
+  name: string;
+  detail: string;
+  icon: LucideIcon;
+  current?: boolean;
+};
+
+const DEVICES_SEED: DeviceItem[] = [
+  {
+    id: "mbp",
+    name: "MacBook Pro",
+    detail: "Signed in Feb 12, 2026 · active now",
+    icon: Laptop,
+    current: true,
+  },
+  {
+    id: "imac",
+    name: "iMac",
+    detail: "Signed in Nov 3, 2025 · last used 6 days ago",
+    icon: Monitor,
+  },
+  {
+    id: "iphone",
+    name: "iPhone 17 Pro",
+    detail: "Signed in Jan 8, 2026 · last used yesterday",
+    icon: Smartphone,
+  },
+];
+
+const ROLE_LABEL: Record<OrgRole, string> = {
+  owner: "Owner",
+  admin: "Admin",
+  member: "Member",
+};
+
+/** Owners and admins hold the payment relationship; members never do. */
+function canManageBilling(account: Account) {
+  return account.kind === "individual" || account.org?.role !== "member";
+}
+
+const ACCOUNT_FIXTURES: { key: string; label: string }[] = [
+  { key: "individual", label: "Personal" },
+  { key: "member", label: "Org · Member" },
+  { key: "admin", label: "Org · Admin" },
+];
+
+/**
+ * Mockup-only chrome that sits outside the app window: swaps the signed-in
+ * account so all three sign-in shapes can be reviewed. Not part of the design.
+ */
+function AccountFixtureSwitcher({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (key: string) => void;
+}) {
+  return (
+    <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/70 px-2 py-1.5 backdrop-blur-md">
+      <span className="pl-1.5 text-[10px] font-medium tracking-wide text-white/40 uppercase">
+        Signed in as
+      </span>
+      {ACCOUNT_FIXTURES.map((f) => (
+        <button
+          key={f.key}
+          onClick={() => onChange(f.key)}
+          className={cn(
+            "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+            value === f.key
+              ? "bg-white text-black"
+              : "text-white/60 hover:bg-white/10 hover:text-white",
+          )}
+        >
+          {f.label}
+        </button>
+      ))}
+    </div>
+  );
+}
 type Subpage =
   | { kind: "system" }
+  | { kind: "plans" }
   | { kind: "modeDetail"; modeId: string }
   | null;
 
@@ -263,6 +521,101 @@ function HoverTip({ label }: { label: string }) {
       {label}
     </span>
   );
+}
+
+/**
+ * A shortlist of languages beats both a fixed one (rigid) and "Automatic"
+ * (unreliable): naming the two you actually speak narrows detection from a
+ * hundred candidates to two.
+ */
+function LanguageChips({
+  value,
+  onChange,
+}: {
+  value: string[];
+  onChange: (next: string[]) => void;
+}) {
+  const [adding, setAdding] = useState(false);
+  const available = ALL_LANGUAGES.filter((l) => !value.includes(l));
+
+  return (
+    <div className="flex flex-wrap items-center justify-end gap-1.5">
+      {value.map((lang) => (
+        <span
+          key={lang}
+          className="hairline flex items-center gap-1 rounded-[6px] bg-fill-hover py-1 pr-1 pl-2 text-[12px] font-medium text-foreground"
+        >
+          {lang}
+          {value.length > 1 && (
+            <button
+              onClick={() => onChange(value.filter((l) => l !== lang))}
+              aria-label={`Remove ${lang}`}
+              className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-strong hover:text-foreground"
+            >
+              <X className="h-3 w-3" strokeWidth={2.5} />
+            </button>
+          )}
+        </span>
+      ))}
+
+      {adding && available.length > 0 ? (
+        <span className="hairline flex flex-wrap items-center gap-1 rounded-[6px] bg-card p-1">
+          {available.map((lang) => (
+            <button
+              key={lang}
+              onClick={() => {
+                onChange([...value, lang]);
+                setAdding(false);
+              }}
+              className="rounded-[4px] px-1.5 py-0.5 text-[12px] text-foreground/85 transition-colors hover:bg-fill-hover"
+            >
+              {lang}
+            </button>
+          ))}
+        </span>
+      ) : (
+        available.length > 0 && (
+          <button
+            onClick={() => setAdding(true)}
+            className="hairline flex items-center gap-1 rounded-[6px] bg-fill px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+          >
+            <Plus className="h-3 w-3" strokeWidth={2.5} />
+            Add
+          </button>
+        )
+      )}
+    </div>
+  );
+}
+
+/** Renders whichever control a setting needs, for base and overrides alike. */
+function SettingControl({
+  def,
+  value,
+  onChange,
+}: {
+  def: SettingDef;
+  value: BaseSettings[SettingKey];
+  onChange: (next: BaseSettings[SettingKey]) => void;
+}) {
+  if (def.kind === "languages") {
+    return (
+      <LanguageChips
+        value={value as string[]}
+        onChange={(next) => onChange(next)}
+      />
+    );
+  }
+  if (def.kind === "switch") {
+    return (
+      <Switch
+        size="sm"
+        checked={value as boolean}
+        onCheckedChange={(c) => onChange(c === true)}
+      />
+    );
+  }
+  return <PopupButton value={value as string} />;
 }
 
 function Kbd({ children }: { children: React.ReactNode }) {
@@ -350,7 +703,7 @@ function WhatsNewStack({
               "hairline absolute flex flex-col gap-0.5 rounded-[8px] bg-raised px-2.5 py-2 text-left shadow-[0_8px_18px_-6px_rgb(0_0_0/0.55)] transition-all duration-300 ease-out",
               i === 0
                 ? "cursor-pointer hover:bg-raised-hover"
-                : "pointer-events-none"
+                : "pointer-events-none",
             )}
             style={{
               top: `${i * OFFSET}px`,
@@ -408,7 +761,7 @@ function DailyNav({
     <aside
       className={cn(
         "flex shrink-0 flex-col pb-1 transition-[width] duration-200 ease-out",
-        collapsed ? "w-[68px] items-center px-2" : "w-[230px] px-2"
+        collapsed ? "w-[68px] items-center px-2" : "w-[230px] px-2",
       )}
     >
       {/* The traffic lights are pinned to the window's top-left by macOS, so
@@ -417,7 +770,7 @@ function DailyNav({
       <div
         className={cn(
           "flex h-11 shrink-0 items-center",
-          collapsed ? "w-full justify-center" : "w-full gap-3 px-1.5"
+          collapsed ? "w-full justify-center" : "w-full gap-3 px-1.5",
         )}
       >
         <TrafficLights />
@@ -436,7 +789,7 @@ function DailyNav({
               collapsed ? "justify-center px-0" : "gap-2.5 px-2",
               active === item.key
                 ? "bg-fill-strong text-foreground"
-                : "text-foreground/80 hover:bg-fill-hover"
+                : "text-foreground/80 hover:bg-fill-hover",
             )}
           >
             <item.icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
@@ -453,7 +806,7 @@ function DailyNav({
         <div
           className={cn(
             "flex items-center border-t border-line pt-4",
-            collapsed ? "flex-col gap-2" : "gap-2"
+            collapsed ? "flex-col gap-2" : "gap-2",
           )}
         >
           <button
@@ -461,7 +814,7 @@ function DailyNav({
             aria-label={collapsed ? "Account" : undefined}
             className={cn(
               "group relative flex items-center rounded-[6px] py-1 text-left transition-colors hover:bg-fill-hover",
-              collapsed ? "justify-center px-1" : "min-w-0 flex-1 gap-2 px-1"
+              collapsed ? "justify-center px-1" : "min-w-0 flex-1 gap-2 px-1",
             )}
           >
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[11px] font-semibold">
@@ -533,7 +886,7 @@ function SetupGuide({
           <ChevronDown
             className={cn(
               "h-4 w-4 transition-transform",
-              collapsed && "rotate-180"
+              collapsed && "rotate-180",
             )}
             strokeWidth={2}
           />
@@ -588,7 +941,7 @@ function SetupGuide({
                   "text-[13px]",
                   task.done
                     ? "text-muted-foreground line-through"
-                    : "text-foreground"
+                    : "text-foreground",
                 )}
               >
                 {task.label}
@@ -675,7 +1028,7 @@ function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
   const groups = HISTORY_GROUPS.map((g) => ({
     ...g,
     items: g.items.filter((t) =>
-      t.toLowerCase().includes(query.trim().toLowerCase())
+      t.toLowerCase().includes(query.trim().toLowerCase()),
     ),
   })).filter((g) => g.items.length > 0);
 
@@ -972,7 +1325,7 @@ function OptionSwatch({
       <div
         className={cn(
           "relative flex h-12 w-[72px] items-start justify-end overflow-hidden rounded-[8px] p-1 transition-shadow",
-          active && "ring-2 ring-primary ring-offset-2 ring-offset-card"
+          active && "ring-2 ring-primary ring-offset-2 ring-offset-card",
         )}
       >
         {children}
@@ -980,7 +1333,7 @@ function OptionSwatch({
       <span
         className={cn(
           "text-[11px] font-medium",
-          active ? "text-foreground" : "text-muted-foreground"
+          active ? "text-foreground" : "text-muted-foreground",
         )}
       >
         {label}
@@ -1192,6 +1545,26 @@ function GeneralPanel({
 /* -------------------------------------------------------------------------- */
 
 /** A switch paired with a gear, the way the app exposes sub-options. */
+/** Wraps a control that an organization policy has frozen for this member. */
+function PolicyLocked({
+  locked,
+  children,
+}: {
+  locked: boolean;
+  children: React.ReactNode;
+}) {
+  if (!locked) return <>{children}</>;
+  return (
+    <div
+      className="flex items-center gap-1.5"
+      title="Managed by your organization"
+    >
+      <Lock className="h-3 w-3 text-muted-foreground" strokeWidth={2} />
+      <div className="pointer-events-none opacity-40">{children}</div>
+    </div>
+  );
+}
+
 function GearSwitch({ defaultChecked = false }: { defaultChecked?: boolean }) {
   return (
     <div className="flex items-center gap-2">
@@ -1206,125 +1579,99 @@ function GearSwitch({ defaultChecked = false }: { defaultChecked?: boolean }) {
   );
 }
 
-function DictationPanel() {
+function DictationPanel({
+  managed,
+  base,
+  onChange,
+}: {
+  managed: boolean;
+  base: BaseSettings;
+  onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
+}) {
+  /** Renders a base setting from the shared registry, so Dictation and a
+   *  mode's overrides can never drift apart. */
+  const row = (key: SettingKey, opts?: { description?: string; last?: boolean; locked?: boolean }) => {
+    const def = SETTING_DEFS.find((d) => d.key === key)!;
+    const control = (
+      <SettingControl
+        def={def}
+        value={base[key]}
+        onChange={(v) => onChange(key, v)}
+      />
+    );
+    return (
+      <SettingsRow
+        label={
+          <span>
+            {def.label}
+            <InfoDot />
+          </span>
+        }
+        description={opts?.description}
+        last={opts?.last}
+        control={
+          opts?.locked ? (
+            <PolicyLocked locked={managed}>{control}</PolicyLocked>
+          ) : (
+            control
+          )
+        }
+      />
+    );
+  };
+
   return (
     <div className="flex flex-col gap-8">
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        These are Super&rsquo;s defaults — what applies whenever no mode says
+        otherwise.
+      </p>
+
       <SettingsSection
         title="Language"
-        description="What you speak. Super handles the rest."
+        description="Name the languages you actually speak. Superwhisper picks between them per recording, which is more reliable than detecting across every language there is."
       >
-        <SettingsRow
-          label="Primary language"
-          last={false}
-          control={<PopupButton value="Spanish" />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Detect language automatically
-              <InfoDot />
-            </span>
-          }
-          description="Switch language mid-sentence without changing this setting."
-          last
-          control={<Switch size="sm" defaultChecked />}
-        />
+        {row("languages", { last: true })}
       </SettingsSection>
 
       <SettingsSection
         title="Formatting"
         description="How your words are cleaned up before they land in the app."
       >
-        <SettingsRow
-          label={
-            <span>
-              Autocapitalize
-              <InfoDot />
-            </span>
-          }
-          control={<Switch size="sm" defaultChecked />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Remove filler words
-              <InfoDot />
-            </span>
-          }
-          description="Drops “um”, “eh”, and false starts."
-          last
-          control={<Switch size="sm" defaultChecked />}
-        />
+        {row("autocapitalize")}
+        {row("removeFillers", {
+          description: "Drops “um”, “eh”, and false starts.",
+          last: true,
+        })}
       </SettingsSection>
 
       <SettingsSection
         title="Output"
         description="Where the finished text goes and how it gets there."
       >
-        <SettingsRow
-          label={
-            <span>
-              Paste result text
-              <InfoDot />
-            </span>
-          }
-          control={<Switch size="sm" defaultChecked />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Hold shift to auto-send after paste
-              <InfoDot />
-            </span>
-          }
-          control={<GearSwitch />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Clipboard behaviour
-              <InfoDot />
-            </span>
-          }
-          control={<PopupButton value="Default" />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Simulate keypresses
-              <InfoDot />
-            </span>
-          }
-          description="For apps that don't accept a normal paste."
-          last
-          control={<GearSwitch />}
-        />
+        {row("pasteResult")}
+        {row("autoSend")}
+        {row("clipboard")}
+        {row("simulateKeypresses", {
+          description: "For apps that don't accept a normal paste.",
+          last: true,
+        })}
       </SettingsSection>
 
       <SettingsSection
         title="Capture"
-        description="What Superwhisper listens to besides your microphone."
+        description={
+          managed
+            ? "What Superwhisper listens to besides your microphone. Some options are set by your organization."
+            : "What Superwhisper listens to besides your microphone."
+        }
       >
-        <SettingsRow
-          label={
-            <span>
-              Record from system audio
-              <InfoDot />
-            </span>
-          }
-          control={<Switch size="sm" defaultChecked={false} />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Identify speakers
-              <InfoDot />
-            </span>
-          }
-          description="Labels who said what in multi-person recordings."
-          last
-          control={<Switch size="sm" defaultChecked={false} />}
-        />
+        {row("systemAudio", { locked: true })}
+        {row("identifySpeakers", {
+          description: "Labels who said what in multi-person recordings.",
+          last: true,
+          locked: true,
+        })}
       </SettingsSection>
     </div>
   );
@@ -1537,7 +1884,7 @@ function SpeedBars({ value }: { value: number }) {
           key={i}
           className={cn(
             "h-[2px] w-[7px] rounded-full",
-            i < value ? "bg-foreground/45" : "bg-foreground/12"
+            i < value ? "bg-foreground/45" : "bg-foreground/12",
           )}
         />
       ))}
@@ -1550,12 +1897,12 @@ function ModelsPanel() {
   const [favorites, setFavorites] = useState<string[]>(["s1-voice"]);
 
   const rows = MODEL_LIBRARY.filter((m) =>
-    m.name.toLowerCase().includes(query.trim().toLowerCase())
+    m.name.toLowerCase().includes(query.trim().toLowerCase()),
   );
 
   const toggleFavorite = (id: string) =>
     setFavorites((prev) =>
-      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id]
+      prev.includes(id) ? prev.filter((f) => f !== id) : [...prev, id],
     );
 
   return (
@@ -1601,116 +1948,116 @@ function ModelsPanel() {
               className="min-w-0 flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
-        <button
-          aria-label="Filter"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-        >
-          <SlidersHorizontal className="h-[15px] w-[15px]" strokeWidth={2} />
-        </button>
-      </div>
-
-      <div className="flex items-center justify-between gap-2">
-        <PopupButton value="All providers" />
-        <button
-          aria-label="Add API key"
-          title="Add your own API key"
-          className="hairline flex h-7 items-center gap-1.5 rounded-[6px] bg-fill-hover px-2.5 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
-        >
-          <KeyRound className="h-[13px] w-[13px]" strokeWidth={2} />
-          <Plus className="h-3 w-3" strokeWidth={2.5} />
-        </button>
-      </div>
-
-      <div className="hairline overflow-hidden rounded-[10px] bg-card">
-        <div className="hairline-b grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground">
-          <span className="pl-6">Model name</span>
-          <span>Type</span>
-          <span>Speed / Acc.</span>
-          <span className="text-right">Cloud/Offline</span>
+          <button
+            aria-label="Filter"
+            className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+          >
+            <SlidersHorizontal className="h-[15px] w-[15px]" strokeWidth={2} />
+          </button>
         </div>
 
-        {rows.length === 0 && (
-          <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
-            No models match &ldquo;{query}&rdquo;.
+        <div className="flex items-center justify-between gap-2">
+          <PopupButton value="All providers" />
+          <button
+            aria-label="Add API key"
+            title="Add your own API key"
+            className="hairline flex h-7 items-center gap-1.5 rounded-[6px] bg-fill-hover px-2.5 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
+          >
+            <KeyRound className="h-[13px] w-[13px]" strokeWidth={2} />
+            <Plus className="h-3 w-3" strokeWidth={2.5} />
+          </button>
+        </div>
+
+        <div className="hairline overflow-hidden rounded-[10px] bg-card">
+          <div className="hairline-b grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+            <span className="pl-6">Model name</span>
+            <span>Type</span>
+            <span>Speed / Acc.</span>
+            <span className="text-right">Cloud/Offline</span>
           </div>
-        )}
 
-        {rows.map((model, i) => {
-          const provider = PROVIDER_STYLE[model.provider];
-          const isFav = favorites.includes(model.id);
-          return (
-            <div
-              key={model.id}
-              className={cn(
-                "grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 transition-colors hover:bg-fill",
-                i !== rows.length - 1 && "border-b border-line"
-              )}
-            >
-              <div className="flex min-w-0 items-center gap-2">
-                <button
-                  onClick={() => toggleFavorite(model.id)}
-                  aria-label={isFav ? "Unfavorite" : "Favorite"}
-                  className="shrink-0 text-muted-foreground/60 transition-colors hover:text-foreground"
-                >
-                  <Star
-                    className={cn(
-                      "h-3.5 w-3.5",
-                      isFav && "fill-[#febc2e] text-[#febc2e]"
-                    )}
-                    strokeWidth={2}
-                  />
-                </button>
-                <span
-                  className={cn(
-                    "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] text-[9px] font-bold",
-                    provider.className
-                  )}
-                >
-                  {provider.label}
-                </span>
-                <span className="truncate text-[12.5px] text-foreground">
-                  {model.name}
-                </span>
-                {model.isNew && (
-                  <span className="shrink-0 rounded-[3px] bg-fill-strong px-1 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
-                    New
-                  </span>
-                )}
-              </div>
-
-              <span className="text-muted-foreground">
-                {model.kind === "language" ? (
-                  <AlignLeft className="h-3.5 w-3.5" strokeWidth={2} />
-                ) : (
-                  <AudioLines className="h-3.5 w-3.5" strokeWidth={2} />
-                )}
-              </span>
-
-              <SpeedBars value={model.speed} />
-
-              <div className="flex items-center justify-end gap-1.5">
-                {model.size ? (
-                  <>
-                    <span className="text-[11px] text-muted-foreground">
-                      {model.size}
-                    </span>
-                    <button
-                      aria-label={`Download ${model.name}`}
-                      className="flex h-4 w-4 items-center justify-center rounded-full bg-fill-hover text-foreground/70 transition-colors hover:bg-fill-strong hover:text-foreground"
-                    >
-                      <Download className="h-2.5 w-2.5" strokeWidth={2.5} />
-                    </button>
-                  </>
-                ) : (
-                  <Cloud
-                    className="h-3.5 w-3.5 text-muted-foreground"
-                    strokeWidth={1.75}
-                  />
-                )}
-              </div>
+          {rows.length === 0 && (
+            <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
+              No models match &ldquo;{query}&rdquo;.
             </div>
-          );
-        })}
+          )}
+
+          {rows.map((model, i) => {
+            const provider = PROVIDER_STYLE[model.provider];
+            const isFav = favorites.includes(model.id);
+            return (
+              <div
+                key={model.id}
+                className={cn(
+                  "grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 transition-colors hover:bg-fill",
+                  i !== rows.length - 1 && "border-b border-line",
+                )}
+              >
+                <div className="flex min-w-0 items-center gap-2">
+                  <button
+                    onClick={() => toggleFavorite(model.id)}
+                    aria-label={isFav ? "Unfavorite" : "Favorite"}
+                    className="shrink-0 text-muted-foreground/60 transition-colors hover:text-foreground"
+                  >
+                    <Star
+                      className={cn(
+                        "h-3.5 w-3.5",
+                        isFav && "fill-[#febc2e] text-[#febc2e]",
+                      )}
+                      strokeWidth={2}
+                    />
+                  </button>
+                  <span
+                    className={cn(
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] text-[9px] font-bold",
+                      provider.className,
+                    )}
+                  >
+                    {provider.label}
+                  </span>
+                  <span className="truncate text-[12.5px] text-foreground">
+                    {model.name}
+                  </span>
+                  {model.isNew && (
+                    <span className="shrink-0 rounded-[3px] bg-fill-strong px-1 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+                      New
+                    </span>
+                  )}
+                </div>
+
+                <span className="text-muted-foreground">
+                  {model.kind === "language" ? (
+                    <AlignLeft className="h-3.5 w-3.5" strokeWidth={2} />
+                  ) : (
+                    <AudioLines className="h-3.5 w-3.5" strokeWidth={2} />
+                  )}
+                </span>
+
+                <SpeedBars value={model.speed} />
+
+                <div className="flex items-center justify-end gap-1.5">
+                  {model.size ? (
+                    <>
+                      <span className="text-[11px] text-muted-foreground">
+                        {model.size}
+                      </span>
+                      <button
+                        aria-label={`Download ${model.name}`}
+                        className="flex h-4 w-4 items-center justify-center rounded-full bg-fill-hover text-foreground/70 transition-colors hover:bg-fill-strong hover:text-foreground"
+                      >
+                        <Download className="h-2.5 w-2.5" strokeWidth={2.5} />
+                      </button>
+                    </>
+                  ) : (
+                    <Cloud
+                      className="h-3.5 w-3.5 text-muted-foreground"
+                      strokeWidth={1.75}
+                    />
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
       </div>
     </div>
@@ -1793,12 +2140,13 @@ function ModesPanel({
                     title="Active mode"
                   />
                 )}
-                <div className="ml-auto flex shrink-0 items-center gap-1.5">
-                  <span className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#d4a27f] text-[9px] font-bold text-[#2b1a10]">
-                    A
-                  </span>
-                  <span className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-white text-[9px] font-bold text-black">
-                    S
+                <div className="ml-auto flex shrink-0 items-center gap-2.5">
+                  <span className="text-[12px] text-muted-foreground">
+                    {Object.keys(mode.overrides).length === 0
+                      ? "Follows Super"
+                      : `${Object.keys(mode.overrides).length} override${
+                          Object.keys(mode.overrides).length === 1 ? "" : "s"
+                        }`}
                   </span>
                   <button
                     onClick={() => onOpenMode(mode.id)}
@@ -1949,49 +2297,120 @@ function SystemPanel() {
 /*                          sub-pages: Modes list/detail                       */
 /* -------------------------------------------------------------------------- */
 
-function ModeDetailPanel({ mode }: { mode: ModeItem }) {
-  const [showAdvanced, setShowAdvanced] = useState(false);
+function ModeDetailPanel({
+  mode,
+  base,
+  onSetOverride,
+  onClearOverride,
+}: {
+  mode: ModeItem;
+  base: BaseSettings;
+  onSetOverride: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
+  onClearOverride: (key: SettingKey) => void;
+}) {
+  const [picking, setPicking] = useState(false);
+
+  const overridden = SETTING_DEFS.filter((d) => d.key in mode.overrides);
+  const available = SETTING_DEFS.filter((d) => !(d.key in mode.overrides));
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingsSection title="Preset">
-        <SettingsRow
-          label={
-            <span>
-              Preset
-              <InfoDot />
-            </span>
-          }
-          last
-          control={<PopupButton value={mode.preset} />}
-        />
-      </SettingsSection>
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        {overridden.length === 0 ? (
+          <>This mode changes nothing yet — it follows Super entirely.</>
+        ) : (
+          <>
+            Overrides {overridden.length}{" "}
+            {overridden.length === 1 ? "setting" : "settings"}. Everything else
+            follows Super.
+          </>
+        )}
+      </p>
 
-      <SettingsSection title="Models">
-        <SettingsRow
-          label="Language"
-          control={<PopupButton value={mode.language} />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Voice Model
-              <InfoDot />
-            </span>
-          }
-          control={<PopupButton value={mode.voiceModel} />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Language Model
-              <InfoDot />
-            </span>
-          }
-          last
-          control={<PopupButton value={mode.languageModel} />}
-        />
-      </SettingsSection>
+      <section className="flex flex-col gap-4">
+        <h2 className="text-[15px] font-semibold text-foreground">
+          Overriding
+        </h2>
+
+        {overridden.length > 0 && (
+          <div className="hairline overflow-hidden rounded-[10px] bg-card">
+            {overridden.map((def, i) => (
+              <SettingsRow
+                key={def.key}
+                label={def.label}
+                description={`${def.group} · Super uses ${formatSettingValue(
+                  base[def.key]
+                )}`}
+                last={i === overridden.length - 1}
+                control={
+                  <div className="flex items-center gap-2">
+                    <SettingControl
+                      def={def}
+                      value={mode.overrides[def.key] as BaseSettings[SettingKey]}
+                      onChange={(v) => onSetOverride(def.key, v)}
+                    />
+                    <button
+                      onClick={() => onClearOverride(def.key)}
+                      aria-label={`Reset ${def.label}`}
+                      title="Follow Super again"
+                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
+                    >
+                      <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+                    </button>
+                  </div>
+                }
+              />
+            ))}
+          </div>
+        )}
+
+        {picking ? (
+          <div className="hairline flex flex-col gap-3 rounded-[10px] bg-card p-3">
+            {[...new Set(available.map((d) => d.group))].map((group) => (
+              <div key={group} className="flex flex-col gap-1">
+                <span className="px-1 text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+                  {group}
+                </span>
+                {available
+                  .filter((d) => d.group === group)
+                  .map((def) => (
+                    <button
+                      key={def.key}
+                      onClick={() => {
+                        const current = base[def.key];
+                        onSetOverride(
+                          def.key,
+                          typeof current === "boolean" ? !current : current
+                        );
+                        setPicking(false);
+                      }}
+                      className="flex items-center justify-between rounded-[6px] px-1.5 py-1 text-left transition-colors hover:bg-fill-hover"
+                    >
+                      <span className="text-[13px] text-foreground">
+                        {def.label}
+                      </span>
+                      <span className="text-[12px] text-muted-foreground">
+                        {formatSettingValue(base[def.key])}
+                      </span>
+                    </button>
+                  ))}
+              </div>
+            ))}
+            <button
+              onClick={() => setPicking(false)}
+              className="self-start px-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+            >
+              Cancel
+            </button>
+          </div>
+        ) : (
+          available.length > 0 && (
+            <GhostButton onClick={() => setPicking(true)}>
+              + Add an override
+            </GhostButton>
+          )
+        )}
+      </section>
 
       <SettingsSection title="Activation">
         <SettingsRow
@@ -2000,6 +2419,9 @@ function ModeDetailPanel({ mode }: { mode: ModeItem }) {
               Activate for apps
               <InfoDot />
             </span>
+          }
+          description={
+            mode.apps.length > 0 ? mode.apps.join(", ") : undefined
           }
           control={<GhostButton>Add apps and sites</GhostButton>}
         />
@@ -2015,92 +2437,19 @@ function ModeDetailPanel({ mode }: { mode: ModeItem }) {
         />
       </SettingsSection>
 
-      <div className="flex flex-col gap-4">
-        <button
-          onClick={() => setShowAdvanced((v) => !v)}
-          className="flex w-fit items-center gap-1.5 text-[13px] font-medium text-foreground/80 transition-colors hover:text-foreground"
-        >
-          <ChevronRight
-            className={cn(
-              "h-4 w-4 transition-transform",
-              showAdvanced && "rotate-90"
-            )}
-            strokeWidth={2}
-          />
-          Advanced settings
-        </button>
-
-        {showAdvanced && (
-          <div className="flex flex-col gap-8">
-            <div className="hairline overflow-hidden rounded-[10px] bg-card">
-              <SettingsRow
-                label={
-                  <span>
-                    Playback when recording
-                    <InfoDot />
-                  </span>
-                }
-                control={<PopupButton value="Pause (Default)" />}
-              />
-              <SettingsRow
-                label={
-                  <span>
-                    Record from system audio
-                    <InfoDot />
-                  </span>
-                }
-                control={<Switch size="sm" defaultChecked={false} />}
-              />
-              <SettingsRow
-                label={
-                  <span>
-                    Identify Speakers
-                    <InfoDot />
-                  </span>
-                }
-                last
-                control={<Switch size="sm" defaultChecked={false} />}
-              />
-            </div>
-
-            <div className="hairline overflow-hidden rounded-[10px] bg-card">
-              <SettingsRow
-                label={
-                  <span>
-                    Autocapitalize Insert
-                    <InfoDot />
-                  </span>
-                }
-                control={<Switch size="sm" defaultChecked />}
-              />
-              <SettingsRow
-                label={
-                  <span>
-                    Auto paste
-                    <InfoDot />
-                  </span>
-                }
-                last
-                control={<PopupButton value="On (Default)" />}
-              />
-            </div>
-
-            <div className="hairline overflow-hidden rounded-[10px] bg-card">
-              <SettingsRow
-                label="Delete this mode"
-                last
-                control={
-                  <button
-                    aria-label="Delete this mode"
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-destructive transition-colors hover:bg-destructive/15"
-                  >
-                    <Trash2 className="h-4 w-4" strokeWidth={2} />
-                  </button>
-                }
-              />
-            </div>
-          </div>
-        )}
+      <div className="hairline overflow-hidden rounded-[10px] bg-card">
+        <SettingsRow
+          label="Delete this mode"
+          last
+          control={
+            <button
+              aria-label="Delete this mode"
+              className="flex h-6 w-6 items-center justify-center rounded-full text-destructive transition-colors hover:bg-destructive/15"
+            >
+              <Trash2 className="h-4 w-4" strokeWidth={2} />
+            </button>
+          }
+        />
       </div>
     </div>
   );
@@ -2110,7 +2459,13 @@ function ModeDetailPanel({ mode }: { mode: ModeItem }) {
 /*                                  Account                                    */
 /* -------------------------------------------------------------------------- */
 
-function AccountPanel() {
+function AccountPanel({ account }: { account: Account }) {
+  const org = account.org;
+  const [devices, setDevices] = useState<DeviceItem[]>(DEVICES_SEED);
+
+  const signOutDevice = (id: string) =>
+    setDevices((prev) => prev.filter((d) => d.id !== id));
+
   const links: { label: string; icon: LucideIcon }[] = [
     { label: "Roadmap", icon: Map },
     { label: "Email", icon: Mail },
@@ -2125,37 +2480,88 @@ function AccountPanel() {
         <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[15px] font-semibold">
           A
         </div>
-        <div className="flex flex-col gap-0.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-0.5">
           <span className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground">
-            angel@caudalflow.com
-            <button
-              aria-label="Edit email"
-              className="text-muted-foreground transition-colors hover:text-foreground"
-            >
-              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
-            </button>
+            {account.email}
+            {!org && (
+              <button
+                aria-label="Edit email"
+                className="text-muted-foreground transition-colors hover:text-foreground"
+              >
+                <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+              </button>
+            )}
           </span>
           <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
-            Superwhisper
+            {org ? org.name : "Superwhisper"}
             <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
-              Pro
+              {org ? ROLE_LABEL[org.role] : "Pro"}
             </span>
           </span>
         </div>
       </div>
 
-      <SettingsSection title="Devices">
-        <SettingsRow
-          label="This device"
-          description="MacBook Pro — signed in since Feb 12, 2026."
-          control={<GhostButton>Sign out</GhostButton>}
-        />
-        <SettingsRow
-          label="Other devices"
-          description="3 of 5 devices signed into this account."
-          last
-          control={<GhostButton>Manage devices</GhostButton>}
-        />
+      {org && (
+        <SettingsSection title="Organization">
+          <SettingsRow
+            icon={<Building2 className="h-4 w-4" strokeWidth={2} />}
+            label={org.name}
+            description={
+              org.role === "member"
+                ? "Enterprise seat provided by your organization. Members, policies and billing are handled by an owner."
+                : "Members, policies and invoices live in the admin portal."
+            }
+            last
+            control={
+              org.role === "member" ? (
+                <span className="text-[12px] text-muted-foreground">
+                  Seat active
+                </span>
+              ) : (
+                <GhostButton>
+                  <span className="flex items-center gap-1.5">
+                    Open admin portal
+                    <ExternalLink className="h-3 w-3" strokeWidth={2} />
+                  </span>
+                </GhostButton>
+              )
+            }
+          />
+        </SettingsSection>
+      )}
+
+      <SettingsSection
+        title="Devices"
+        description={`${devices.length} of 5 devices signed into this account.`}
+      >
+        {devices.map((device, i) => (
+          <SettingsRow
+            key={device.id}
+            icon={
+              <device.icon className="h-[15px] w-[15px]" strokeWidth={1.75} />
+            }
+            label={
+              <span className="flex items-center gap-1.5">
+                {device.name}
+                {device.current && (
+                  <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+                    This Mac
+                  </span>
+                )}
+              </span>
+            }
+            description={device.detail}
+            last={i === devices.length - 1}
+            control={
+              <button
+                onClick={() => signOutDevice(device.id)}
+                className="rounded-[6px] px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+              >
+                Sign out
+              </button>
+            }
+          />
+        ))}
       </SettingsSection>
 
       <section className="flex flex-col gap-3">
@@ -2185,61 +2591,265 @@ function AccountPanel() {
 /*                                  Billing                                    */
 /* -------------------------------------------------------------------------- */
 
-function BillingPanel() {
+function BillingPanel({
+  account,
+  onOpenPlans,
+}: {
+  account: Account;
+  onOpenPlans: () => void;
+}) {
+  const org = account.org;
+  const [seats, setSeats] = useState(25);
+  const [confirmingCancel, setConfirmingCancel] = useState(false);
+
   return (
     <div className="flex flex-col gap-8">
       <div className="hairline flex items-center gap-4 rounded-[10px] bg-card px-4 py-3.5">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
           <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
-            Pro
+            {org ? "Enterprise" : "Pro"}
             <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
               Active
             </span>
           </span>
           <span className="text-[12px] leading-snug text-muted-foreground">
-            $8.49/month · renews Sep 4, 2026
+            {org
+              ? `${org.name} · 12 of ${seats} seats used · renews Sep 4, 2026`
+              : "$8.49/month · renews Sep 4, 2026"}
           </span>
         </div>
-        <GhostButton>Change plan</GhostButton>
+        {!org && <GhostButton onClick={onOpenPlans}>Change plan</GhostButton>}
       </div>
 
-      <SettingsSection
-        title="Payment"
-        description="Invoices, payment method and tax details open in your browser."
-      >
-        <SettingsRow
-          label="Payment method"
-          description="Visa •••• 5904 — expires 08/28"
-          control={<GhostButton>Update</GhostButton>}
-        />
-        <SettingsRow
-          label="Billing email"
-          description="angel@caudalflow.com"
-          control={<GhostButton>Change</GhostButton>}
-        />
-        <SettingsRow
-          label="Invoices"
-          description="Download past receipts and tax details."
-          last
-          control={
-            <GhostButton>
-              <span className="flex items-center gap-1.5">
-                Open portal
-                <ExternalLink className="h-3 w-3" strokeWidth={2} />
-              </span>
-            </GhostButton>
-          }
-        />
-      </SettingsSection>
+      {org ? (
+        <SettingsSection
+          title="Organization billing"
+          description="Invoices, payment method and tax details live in the admin portal."
+        >
+          <SettingsRow
+            label="Seats"
+            description={`$12/seat · billed monthly. 12 in use, ${seats - 12} spare.`}
+            control={
+              <div className="hairline flex items-center gap-1 rounded-[6px] bg-fill-hover px-1">
+                <button
+                  aria-label="Remove a seat"
+                  disabled={seats <= 12}
+                  onClick={() => setSeats((s) => Math.max(12, s - 1))}
+                  className="flex h-6 w-6 items-center justify-center rounded-[4px] text-muted-foreground transition-colors hover:text-foreground disabled:opacity-30"
+                >
+                  <Minus className="h-3 w-3" strokeWidth={2.5} />
+                </button>
+                <span className="min-w-6 text-center text-[12px] font-medium tabular-nums">
+                  {seats}
+                </span>
+                <button
+                  aria-label="Add a seat"
+                  onClick={() => setSeats((s) => s + 1)}
+                  className="flex h-6 w-6 items-center justify-center rounded-[4px] text-muted-foreground transition-colors hover:text-foreground"
+                >
+                  <Plus className="h-3 w-3" strokeWidth={2.5} />
+                </button>
+              </div>
+            }
+          />
+          <SettingsRow
+            label="Payment method"
+            description="Visa •••• 5904 — expires 08/28"
+            control={
+              <GhostButton>
+                <span className="flex items-center gap-1.5">
+                  Update
+                  <ExternalLink className="h-3 w-3" strokeWidth={2} />
+                </span>
+              </GhostButton>
+            }
+          />
+          <SettingsRow
+            label="Invoices"
+            description="Download past receipts and tax details."
+            last
+            control={
+              <GhostButton>
+                <span className="flex items-center gap-1.5">
+                  Open admin portal
+                  <ExternalLink className="h-3 w-3" strokeWidth={2} />
+                </span>
+              </GhostButton>
+            }
+          />
+        </SettingsSection>
+      ) : (
+        <>
+          <SettingsSection
+            title="Payment"
+            description="Invoices, payment method and tax details open in your browser."
+          >
+            <SettingsRow
+              label="Payment method"
+              description="Visa •••• 5904 — expires 08/28"
+              control={<GhostButton>Update</GhostButton>}
+            />
+            <SettingsRow
+              label="Billing email"
+              description="angel@example.com"
+              control={<GhostButton>Change</GhostButton>}
+            />
+            <SettingsRow
+              label="Invoices"
+              description="Download past receipts and tax details."
+              last
+              control={
+                <GhostButton>
+                  <span className="flex items-center gap-1.5">
+                    Open portal
+                    <ExternalLink className="h-3 w-3" strokeWidth={2} />
+                  </span>
+                </GhostButton>
+              }
+            />
+          </SettingsSection>
 
-      <SettingsSection title="Subscription">
-        <SettingsRow
-          label="Cancel subscription"
-          description="Pro stays active until Sep 4, 2026."
-          last
-          control={<GhostButton>Cancel</GhostButton>}
-        />
-      </SettingsSection>
+          <SettingsSection title="Subscription">
+            <SettingsRow
+              label="Cancel subscription"
+              description={
+                confirmingCancel
+                  ? "You keep Pro until Sep 4, 2026, then drop to the free tier. Local models keep working."
+                  : "Pro stays active until Sep 4, 2026."
+              }
+              last
+              control={
+                confirmingCancel ? (
+                  <div className="flex items-center gap-1.5">
+                    <GhostButton onClick={() => setConfirmingCancel(false)}>
+                      Keep Pro
+                    </GhostButton>
+                    <button
+                      onClick={() => setConfirmingCancel(false)}
+                      className="rounded-[6px] bg-destructive/15 px-2.5 py-1 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/25"
+                    >
+                      Confirm cancel
+                    </button>
+                  </div>
+                ) : (
+                  <GhostButton onClick={() => setConfirmingCancel(true)}>
+                    Cancel
+                  </GhostButton>
+                )
+              }
+            />
+          </SettingsSection>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              sub-page: Plans                                */
+/* -------------------------------------------------------------------------- */
+
+const PLANS: {
+  id: string;
+  name: string;
+  price: string;
+  cadence: string;
+  points: string[];
+}[] = [
+  {
+    id: "free",
+    name: "Free",
+    price: "$0",
+    cadence: "forever",
+    points: ["Local models only", "Unlimited dictation", "One device"],
+  },
+  {
+    id: "pro",
+    name: "Pro",
+    price: "$8.49",
+    cadence: "per month",
+    points: ["Cloud and local models", "Custom modes", "Up to 5 devices"],
+  },
+  {
+    id: "enterprise",
+    name: "Enterprise",
+    price: "Custom",
+    cadence: "billed yearly",
+    points: ["SSO and SCIM", "Org-wide policies", "SOC 2 and DPA"],
+  },
+];
+
+function PlansPanel({ current = "pro" }: { current?: string }) {
+  return (
+    <div className="flex flex-col gap-5">
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        Upgrades apply right away. Downgrades take effect on Sep 4, 2026, when
+        the current period ends.
+      </p>
+
+      <div className="flex flex-col gap-2">
+        {PLANS.map((plan) => {
+          const isCurrent = plan.id === current;
+          return (
+            <div
+              key={plan.id}
+              className={cn(
+                "hairline flex items-start gap-4 rounded-[10px] bg-card px-4 py-3.5",
+                isCurrent && "ring-1 ring-foreground/15",
+              )}
+            >
+              <div className="flex min-w-0 flex-1 flex-col gap-1.5">
+                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+                  {plan.name}
+                  {isCurrent && (
+                    <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+                      Current
+                    </span>
+                  )}
+                </span>
+                <ul className="flex flex-col gap-1">
+                  {plan.points.map((point) => (
+                    <li
+                      key={point}
+                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                    >
+                      <CircleCheck
+                        className="h-3 w-3 shrink-0 text-muted-foreground/60"
+                        strokeWidth={2}
+                      />
+                      {point}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+
+              <div className="flex shrink-0 flex-col items-end gap-2">
+                <div className="flex flex-col items-end">
+                  <span className="text-[13px] font-semibold text-foreground">
+                    {plan.price}
+                  </span>
+                  <span className="text-[11px] text-muted-foreground">
+                    {plan.cadence}
+                  </span>
+                </div>
+                {isCurrent ? (
+                  <span className="text-[12px] text-muted-foreground">
+                    In use
+                  </span>
+                ) : (
+                  <GhostButton>
+                    {plan.id === "enterprise"
+                      ? "Contact sales"
+                      : plan.id === "free"
+                        ? "Downgrade"
+                        : "Upgrade"}
+                  </GhostButton>
+                )}
+              </div>
+            </div>
+          );
+        })}
+      </div>
     </div>
   );
 }
@@ -2254,12 +2864,46 @@ export default function SettingsPage() {
   const appearance = useResolvedTheme(theme);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsKey>("general");
+  const [accountFixture, setAccountFixture] = useState("individual");
+  const account = ACCOUNTS[accountFixture];
+  const isManaged = account.kind === "org";
+  /** Members have no payment relationship, so Billing never shows for them. */
+  const visibleTabs = canManageBilling(account)
+    ? SETTINGS_TABS
+    : SETTINGS_TABS.filter((t) => t.key !== "billing");
   const [subpage, setSubpage] = useState<Subpage>(null);
   const [whatsNewItem, setWhatsNewItem] = useState<WhatsNewItem | null>(null);
   const [whatsNewStack, setWhatsNewStack] =
     useState<WhatsNewItem[]>(WHATS_NEW_SEED);
   const [modesEnabled, setModesEnabled] = useState(false);
   const [modes, setModes] = useState<ModeItem[]>(MODES_SEED);
+  const [base, setBase] = useState<BaseSettings>(BASE_DEFAULTS);
+
+  const setBaseValue = (key: SettingKey, value: BaseSettings[SettingKey]) =>
+    setBase((prev) => ({ ...prev, [key]: value }));
+
+  const setOverride = (
+    modeId: string,
+    key: SettingKey,
+    value: BaseSettings[SettingKey]
+  ) =>
+    setModes((prev) =>
+      prev.map((m) =>
+        m.id === modeId
+          ? { ...m, overrides: { ...m.overrides, [key]: value } }
+          : m
+      )
+    );
+
+  const clearOverride = (modeId: string, key: SettingKey) =>
+    setModes((prev) =>
+      prev.map((m) => {
+        if (m.id !== modeId) return m;
+        const next = { ...m.overrides };
+        delete next[key];
+        return { ...m, overrides: next };
+      })
+    );
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [setupTasks, setSetupTasks] = useState<SetupTask[]>(SETUP_SEED);
   const [setupOpen, setSetupOpen] = useState(true);
@@ -2270,7 +2914,7 @@ export default function SettingsPage() {
 
   const toggleSetupTask = (id: string) =>
     setSetupTasks((prev) =>
-      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
     );
 
   const DailyPanel = DAILY_PANELS[active];
@@ -2306,15 +2950,28 @@ export default function SettingsPage() {
   if (subpage?.kind === "system") {
     settingsBody = <SystemPanel />;
     onBack = () => setSubpage(null);
+  } else if (subpage?.kind === "plans") {
+    settingsBody = <PlansPanel />;
+    onBack = () => setSubpage(null);
   } else if (detailMode) {
-    settingsBody = <ModeDetailPanel mode={detailMode} />;
+    settingsBody = (
+      <ModeDetailPanel
+        mode={detailMode}
+        base={base}
+        onSetOverride={(k, v) => setOverride(detailMode.id, k, v)}
+        onClearOverride={(k) => clearOverride(detailMode.id, k)}
+      />
+    );
     onBack = () => setSubpage(null);
   } else {
     settingsBody =
       settingsTab === "account" ? (
-        <AccountPanel />
-      ) : settingsTab === "billing" ? (
-        <BillingPanel />
+        <AccountPanel account={account} />
+      ) : settingsTab === "billing" && canManageBilling(account) ? (
+        <BillingPanel
+          account={account}
+          onOpenPlans={() => setSubpage({ kind: "plans" })}
+        />
       ) : settingsTab === "general" ? (
         <GeneralPanel
           onOpenSystem={() => setSubpage({ kind: "system" })}
@@ -2322,7 +2979,7 @@ export default function SettingsPage() {
           setTheme={setTheme}
         />
       ) : settingsTab === "dictation" ? (
-        <DictationPanel />
+        <DictationPanel managed={isManaged} base={base} onChange={setBaseValue} />
       ) : settingsTab === "shortcuts" ? (
         <ShortcutsPanel />
       ) : settingsTab === "sound" ? (
@@ -2344,9 +3001,14 @@ export default function SettingsPage() {
     <main
       className={cn(
         "flex min-h-screen items-center justify-center bg-desk p-10 transition-colors duration-300",
-        appearance === "dark" && "dark"
+        appearance === "dark" && "dark",
       )}
     >
+      <AccountFixtureSwitcher
+        value={accountFixture}
+        onChange={setAccountFixture}
+      />
+
       <MacWindow width="1020px" height="700px">
         <div className="flex min-h-0 flex-1 gap-2 p-2">
           <DailyNav
@@ -2372,21 +3034,21 @@ export default function SettingsPage() {
             {/* Status bar sits in the chrome gutter, outside the pane, so the
                 sidebar can run the full height of the window. */}
             <div className="flex h-8 shrink-0 items-center justify-end gap-1 px-1">
-          {!setupOpen && !allSetupDone && (
-            <button
-              onClick={() => {
-                setSetupOpen(true);
-                setSetupCollapsed(false);
-              }}
-              className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-            >
-              <CircleCheck className="h-[13px] w-[13px]" strokeWidth={2} />
-              Setup guide
-              <span className="tabular-nums">
-                {setupDone}/{setupTasks.length}
-              </span>
-            </button>
-          )}
+              {!setupOpen && !allSetupDone && (
+                <button
+                  onClick={() => {
+                    setSetupOpen(true);
+                    setSetupCollapsed(false);
+                  }}
+                  className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+                >
+                  <CircleCheck className="h-[13px] w-[13px]" strokeWidth={2} />
+                  Setup guide
+                  <span className="tabular-nums">
+                    {setupDone}/{setupTasks.length}
+                  </span>
+                </button>
+              )}
               <button className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground">
                 MacBook Air Microphone
                 <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
@@ -2408,7 +3070,7 @@ export default function SettingsPage() {
         {settingsOpen && (
           <SettingsWindow
             paneKey={paneKey}
-            tabs={SETTINGS_TABS}
+            tabs={visibleTabs}
             active={settingsTab}
             onTabChange={(key) => {
               setSubpage(null);
@@ -2425,10 +3087,7 @@ export default function SettingsPage() {
         )}
 
         {whatsNewItem && (
-          <DetailModal
-            width="440px"
-            onClose={() => setWhatsNewItem(null)}
-          >
+          <DetailModal width="440px" onClose={() => setWhatsNewItem(null)}>
             <div className="flex flex-col gap-3">
               <span className="text-[11px] font-medium text-muted-foreground">
                 {formatDaysAgo(whatsNewItem.daysAgo)}
