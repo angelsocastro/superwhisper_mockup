@@ -1419,7 +1419,7 @@ function HomePanel({
 /* -------------------------------------------------------------------------- */
 
 type VocabEntry = { id: string; word: string; to?: string };
-type DictionaryTab = "terms" | "corrections";
+type DictionaryTab = "terms" | "snippets";
 
 let vocabIdCounter = 0;
 function nextVocabId() {
@@ -1485,7 +1485,7 @@ function DictionaryPanel() {
       <div className="flex items-start justify-between gap-4">
         <PanelIntro
           title="Dictionary"
-          description="Terms are recognized as-is; corrections replace a word Superwhisper tends to mishear. Click any entry to edit it in place."
+          description="Terms are recognized as-is; snippets replace a word Superwhisper tends to mishear. Click any entry to edit it in place."
         />
         <div className="flex shrink-0 items-center gap-1">
           <button
@@ -1511,20 +1511,20 @@ function DictionaryPanel() {
           onValueChange={(v) => setTab(v as DictionaryTab)}
           options={[
             { value: "terms", label: `Terms (${terms.length})` },
-            { value: "corrections", label: `Corrections (${corrections.length})` },
+            { value: "snippets", label: `Snippets (${corrections.length})` },
           ]}
         />
         <GhostButton
           onClick={openAdd}
           className="rounded-full bg-transparent px-3.5 py-1.5"
         >
-          {tab === "terms" ? "+ Add term" : "+ Add correction"}
+          {tab === "terms" ? "+ Add term" : "+ Add snippet"}
         </GhostButton>
       </div>
 
       {list.length === 0 ? (
         <div className="hairline rounded-[10px] px-4 py-6 text-center text-[12px] text-muted-foreground">
-          {tab === "terms" ? "No terms yet." : "No corrections yet."}
+          {tab === "terms" ? "No terms yet." : "No snippets yet."}
         </div>
       ) : (
         <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5">
@@ -1592,7 +1592,7 @@ function DictionaryPanel() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <h2 className="text-[15px] font-semibold text-foreground">
-                  Add a correction
+                  Add a snippet
                 </h2>
                 <p className="text-[12px] leading-relaxed text-muted-foreground">
                   Replace a word Superwhisper tends to mishear with the one
