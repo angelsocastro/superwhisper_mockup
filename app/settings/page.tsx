@@ -102,9 +102,9 @@ const WHATS_NEW_SEED: WhatsNewItem[] = [
   {
     id: "vocab-sync",
     daysAgo: 23,
-    title: "Vocabulary sync",
+    title: "Dictionary sync",
     summary: "Your words now sync everywhere.",
-    body: "Custom vocabulary and text replacements now sync automatically across every Mac and iPhone signed into your Superwhisper account.",
+    body: "Your personal dictionary — terms and corrections alike — now syncs automatically across every Mac and iPhone signed into your Superwhisper account.",
   },
 ];
 
@@ -577,7 +577,7 @@ const TAB_BY_GROUP: Record<string, SettingsKey> = {
 
 const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
   { key: "home", label: "Home", icon: HomeIcon },
-  { key: "vocabulary", label: "Vocabulary", icon: BookOpen },
+  { key: "vocabulary", label: "Dictionary", icon: BookOpen },
 ];
 
 const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
@@ -983,7 +983,7 @@ const SETUP_SEED: SetupTask[] = [
   },
   {
     id: "vocabulary",
-    label: "Add a word to your vocabulary",
+    label: "Add a word to your dictionary",
     done: false,
     icon: BookOpen,
   },
@@ -1411,10 +1411,11 @@ function HomePanel({
 }
 
 /* -------------------------------------------------------------------------- */
-/*                                 Vocabulary                                  */
+/*                                 Dictionary                                  */
 /* -------------------------------------------------------------------------- */
 
 type VocabEntry = { id: string; word: string; to?: string };
+type DictionaryTab = "terms" | "corrections";
 
 let vocabIdCounter = 0;
 function nextVocabId() {
@@ -1422,7 +1423,7 @@ function nextVocabId() {
   return `new-${vocabIdCounter}`;
 }
 
-function VocabularyPanel() {
+function DictionaryPanel() {
   const [entries, setEntries] = useState<VocabEntry[]>([
     { id: "seed-call", word: "call" },
     { id: "seed-controll", word: "controll" },
@@ -1434,25 +1435,14 @@ function VocabularyPanel() {
     { id: "seed-superwhisper", word: "Superwhisper" },
     { id: "seed-telnyx", word: "telnyx" },
   ]);
-  const [draft, setDraft] = useState("");
-  const [replacementDraft, setReplacementDraft] = useState<string | null>(null);
+  const [tab, setTab] = useState<DictionaryTab>("terms");
+  const [addOpen, setAddOpen] = useState(false);
+  const [termDraft, setTermDraft] = useState("");
+  const [misspellingDraft, setMisspellingDraft] = useState("");
+  const [correctionDraft, setCorrectionDraft] = useState("");
 
-  const addWord = () => {
-    const word = draft.trim();
-    if (!word) return;
-    setEntries((prev) => [{ id: nextVocabId(), word }, ...prev]);
-    setDraft("");
-    setReplacementDraft(null);
-  };
-
-  const addReplacement = () => {
-    const word = draft.trim();
-    const to = (replacementDraft ?? "").trim();
-    if (!word || !to) return;
-    setEntries((prev) => [{ id: nextVocabId(), word, to }, ...prev]);
-    setDraft("");
-    setReplacementDraft(null);
-  };
+  const terms = entries.filter((e) => e.to === undefined);
+  const corrections = entries.filter((e) => e.to !== undefined);
 
   const updateWord = (id: string, word: string) =>
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, word } : e)));
@@ -1460,19 +1450,39 @@ function VocabularyPanel() {
   const updateTarget = (id: string, to: string) =>
     setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, to } : e)));
 
+  const remove = (id: string) =>
+    setEntries((prev) => prev.filter((e) => e.id !== id));
+
+  const openAdd = () => {
+    setTermDraft("");
+    setMisspellingDraft("");
+    setCorrectionDraft("");
+    setAddOpen(true);
+  };
+
+  const submitAdd = () => {
+    if (tab === "terms") {
+      const word = termDraft.trim();
+      if (!word) return;
+      setEntries((prev) => [{ id: nextVocabId(), word }, ...prev]);
+    } else {
+      const word = misspellingDraft.trim();
+      const to = correctionDraft.trim();
+      if (!word || !to) return;
+      setEntries((prev) => [{ id: nextVocabId(), word, to }, ...prev]);
+    }
+    setAddOpen(false);
+  };
+
+  const list = tab === "terms" ? terms : corrections;
+
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-[15px] font-semibold text-foreground">
-            Vocabulary
-          </h2>
-          <p className="text-[12px] leading-relaxed text-muted-foreground">
-            Add names, jargon, or shorthand — plain words are recognized as-is,
-            and words with an arrow are expanded automatically as you dictate.
-            Click any entry to edit it in place.
-          </p>
-        </div>
+        <PanelIntro
+          title="Dictionary"
+          description="Terms are recognized as-is; corrections replace a word Superwhisper tends to mishear. Click any entry to edit it in place."
+        />
         <div className="flex shrink-0 items-center gap-1">
           <button
             aria-label="Import list"
@@ -1491,74 +1501,27 @@ function VocabularyPanel() {
         </div>
       </div>
 
+      <div className="flex items-center justify-between gap-4">
+        <SegmentedControl
+          value={tab}
+          onValueChange={(v) => setTab(v as DictionaryTab)}
+          options={[
+            { value: "terms", label: `Terms (${terms.length})` },
+            { value: "corrections", label: `Corrections (${corrections.length})` },
+          ]}
+        />
+        <GhostButton onClick={openAdd}>
+          {tab === "terms" ? "+ Add term" : "+ Add correction"}
+        </GhostButton>
+      </div>
+
       <div className="hairline overflow-hidden rounded-[10px] bg-card">
-        <div className="hairline-b flex flex-col gap-2 px-4 py-3">
-          <div className="flex items-center gap-2">
-            <input
-              value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              onKeyDown={(e) => {
-                if (e.key !== "Enter") return;
-                if (replacementDraft !== null) addReplacement();
-                else addWord();
-              }}
-              placeholder="New word or replacement"
-              className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
-            />
-            <button
-              onClick={addWord}
-              disabled={!draft.trim()}
-              className="shrink-0 text-[12px] font-medium text-primary hover:brightness-125 disabled:pointer-events-none disabled:opacity-40"
-            >
-              Add word
-            </button>
-          </div>
-
-          {replacementDraft === null ? (
-            <button
-              onClick={() => setReplacementDraft("")}
-              disabled={!draft.trim()}
-              className="self-start text-[12px] font-medium text-muted-foreground hover:text-foreground disabled:pointer-events-none disabled:opacity-40"
-            >
-              + Add as a replacement instead
-            </button>
-          ) : (
-            <div className="flex items-center gap-2 pl-1">
-              <span className="text-[12px] text-muted-foreground">→</span>
-              <input
-                autoFocus
-                value={replacementDraft}
-                onChange={(e) => setReplacementDraft(e.target.value)}
-                onKeyDown={(e) => {
-                  if (e.key === "Enter") addReplacement();
-                  if (e.key === "Escape") setReplacementDraft(null);
-                }}
-                placeholder="Replace with…"
-                className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
-              />
-              <button
-                onClick={addReplacement}
-                disabled={!draft.trim() || !replacementDraft.trim()}
-                className="shrink-0 text-[12px] font-medium text-primary hover:brightness-125 disabled:pointer-events-none disabled:opacity-40"
-              >
-                Add
-              </button>
-              <button
-                onClick={() => setReplacementDraft(null)}
-                className="shrink-0 text-[12px] font-medium text-muted-foreground hover:text-foreground"
-              >
-                Cancel
-              </button>
-            </div>
-          )}
-        </div>
-
-        {entries.length === 0 && (
+        {list.length === 0 && (
           <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
-            No words yet.
+            {tab === "terms" ? "No terms yet." : "No corrections yet."}
           </div>
         )}
-        {entries.map((entry, i) => (
+        {list.map((entry, i) => (
           <SettingsRow
             key={entry.id}
             label={
@@ -1578,12 +1541,10 @@ function VocabularyPanel() {
                 </span>
               ) : undefined
             }
-            last={i === entries.length - 1}
+            last={i === list.length - 1}
             control={
               <button
-                onClick={() =>
-                  setEntries((prev) => prev.filter((e) => e.id !== entry.id))
-                }
+                onClick={() => remove(entry.id)}
                 className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
               >
                 Remove
@@ -1592,6 +1553,90 @@ function VocabularyPanel() {
           />
         ))}
       </div>
+
+      {addOpen && (
+        <DetailModal width="360px" onClose={() => setAddOpen(false)}>
+          {tab === "terms" ? (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-[15px] font-semibold text-foreground">
+                  Add a term
+                </h2>
+                <p className="text-[12px] leading-relaxed text-muted-foreground">
+                  A name, bit of jargon, or shorthand you want recognized
+                  as-is.
+                </p>
+              </div>
+              <input
+                autoFocus
+                value={termDraft}
+                onChange={(e) => setTermDraft(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && submitAdd()}
+                placeholder="The word you'll say"
+                className="hairline rounded-[7px] bg-fill px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+              <button
+                onClick={submitAdd}
+                disabled={!termDraft.trim()}
+                className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          ) : (
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-col gap-1">
+                <h2 className="text-[15px] font-semibold text-foreground">
+                  Add a correction
+                </h2>
+                <p className="text-[12px] leading-relaxed text-muted-foreground">
+                  Replace a word Superwhisper tends to mishear with the one
+                  you meant.
+                </p>
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="dictionary-misheard"
+                  className="text-[11px] font-medium text-muted-foreground"
+                >
+                  Misheard as
+                </label>
+                <input
+                  id="dictionary-misheard"
+                  autoFocus
+                  value={misspellingDraft}
+                  onChange={(e) => setMisspellingDraft(e.target.value)}
+                  placeholder="e.g. super whisper"
+                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+              </div>
+              <div className="flex flex-col gap-1.5">
+                <label
+                  htmlFor="dictionary-correction"
+                  className="text-[11px] font-medium text-muted-foreground"
+                >
+                  Should be
+                </label>
+                <input
+                  id="dictionary-correction"
+                  value={correctionDraft}
+                  onChange={(e) => setCorrectionDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitAdd()}
+                  placeholder="e.g. Superwhisper"
+                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+              </div>
+              <button
+                onClick={submitAdd}
+                disabled={!misspellingDraft.trim() || !correctionDraft.trim()}
+                className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
+              >
+                Add
+              </button>
+            </div>
+          )}
+        </DetailModal>
+      )}
     </div>
   );
 }
@@ -1604,7 +1649,7 @@ const DAILY_PANELS: Record<
   }) => React.ReactNode
 > = {
   home: HomePanel,
-  vocabulary: VocabularyPanel,
+  vocabulary: DictionaryPanel,
 };
 
 /* -------------------------------------------------------------------------- */
@@ -3040,7 +3085,7 @@ function SystemPanel() {
 
       <SettingsSection
         title="Sync"
-        description="Keeps modes, vocabulary and text replacements the same on every Mac."
+        description="Keeps modes and your personal dictionary the same on every Mac."
       >
         <SettingsRow
           label={
