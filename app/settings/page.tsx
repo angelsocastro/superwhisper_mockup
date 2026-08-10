@@ -62,23 +62,34 @@ import { cn } from "@/lib/utils";
 
 type WhatsNewItem = {
   id: string;
-  date: string;
+  /** Days before today, so the mockup never shows a stale release date. */
+  daysAgo: number;
   title: string;
   summary: string;
   body: string;
 };
 
+/**
+ * Formatted at render time rather than module scope: a long-lived dev server
+ * would otherwise freeze the date at boot and desync from the client.
+ */
+function formatDaysAgo(daysAgo: number) {
+  const d = new Date();
+  d.setDate(d.getDate() - daysAgo);
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric" });
+}
+
 const WHATS_NEW_SEED: WhatsNewItem[] = [
   {
     id: "s1-voice",
-    date: "Apr 8",
+    daysAgo: 4,
     title: "S1 Voice & Language",
     summary: "Our fastest cloud model yet.",
     body: "S1 Voice is built and hosted by Superwhisper — it's our fastest cloud model yet, with native support for 40+ languages and automatic language detection mid-sentence.",
   },
   {
     id: "vocab-sync",
-    date: "Mar 22",
+    daysAgo: 23,
     title: "Vocabulary sync",
     summary: "Your words now sync everywhere.",
     body: "Custom vocabulary and text replacements now sync automatically across every Mac and iPhone signed into your Superwhisper account.",
@@ -312,7 +323,7 @@ function WhatsNewStack({
             }}
           >
             <span className="text-[10px] font-medium text-muted-foreground">
-              {item.date}
+              {formatDaysAgo(item.daysAgo)}
             </span>
             <span className="text-[12px] leading-snug font-medium text-foreground/90">
               {item.title}
@@ -2203,7 +2214,7 @@ export default function SettingsPage() {
           >
             <div className="flex flex-col gap-3">
               <span className="text-[11px] font-medium text-muted-foreground">
-                {whatsNewItem.date}
+                {formatDaysAgo(whatsNewItem.daysAgo)}
               </span>
               <h2 className="text-[17px] font-semibold text-foreground">
                 {whatsNewItem.title}
