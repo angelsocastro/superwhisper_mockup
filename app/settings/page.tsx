@@ -49,7 +49,6 @@ import { SettingsWindow, type SettingsTab } from "@/components/settings-window";
 import { DetailModal } from "@/components/detail-modal";
 import { SettingsSection, SettingsRow } from "@/components/settings-parts";
 import { InlineEdit } from "@/components/inline-edit";
-import { AppIcon, type IconTone } from "@/components/app-icon";
 import { PopupButton } from "@/components/popup-button";
 import { Switch } from "@/components/ui/switch";
 import { Separator } from "@/components/ui/separator";
@@ -218,27 +217,18 @@ type Subpage =
   | { kind: "modeDetail"; modeId: string }
   | null;
 
-/**
- * Vivid tones for daily-use destinations, neutral greys for configuration —
- * the same colour split the real app and System Settings use.
- */
-const DAILY_USE: {
-  key: DailyKey;
-  label: string;
-  icon: LucideIcon;
-  tone: IconTone;
-}[] = [
-  { key: "home", label: "Home", icon: HomeIcon, tone: "orange" },
-  { key: "vocabulary", label: "Vocabulary", icon: BookOpen, tone: "blue" },
+const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
+  { key: "home", label: "Home", icon: HomeIcon },
+  { key: "vocabulary", label: "Vocabulary", icon: BookOpen },
 ];
 
 const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
-  { key: "general", label: "General", icon: SettingsIcon, tone: "gray", group: 1 },
-  { key: "dictation", label: "Dictation", icon: Type, tone: "indigo", group: 1 },
-  { key: "shortcuts", label: "Shortcuts", icon: Keyboard, tone: "slate", group: 1 },
-  { key: "sound", label: "Sound", icon: Volume2, tone: "pink", group: 1 },
-  { key: "models", label: "Models", icon: BrainCircuit, tone: "purple", group: 2 },
-  { key: "advanced", label: "Advanced", icon: Wrench, tone: "teal", group: 2 },
+  { key: "general", label: "General", icon: SettingsIcon, group: 1 },
+  { key: "dictation", label: "Dictation", icon: Type, group: 1 },
+  { key: "shortcuts", label: "Shortcuts", icon: Keyboard, group: 1 },
+  { key: "sound", label: "Sound", icon: Volume2, group: 1 },
+  { key: "models", label: "Models", icon: BrainCircuit, group: 2 },
+  { key: "advanced", label: "Advanced", icon: Wrench, group: 2 },
 ];
 
 const TITLES: Record<DailyKey, string> = {
@@ -397,7 +387,7 @@ function DailyNav({
                 : "text-foreground/80 hover:bg-fill-hover"
             )}
           >
-            <AppIcon icon={item.icon} tone={item.tone} size={22} />
+            <item.icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
             {item.label}
           </button>
         ))}

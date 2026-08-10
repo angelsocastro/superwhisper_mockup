@@ -3,14 +3,12 @@
 import { ReactNode } from "react";
 import { ChevronLeft, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
-import { AppIcon, type IconTone } from "@/components/app-icon";
 import { cn } from "@/lib/utils";
 
 export type SettingsTab = {
   key: string;
   label: string;
   icon: LucideIcon;
-  tone: IconTone;
   /** Items sharing a group number sit together, separated by a gap. */
   group: number;
 };
@@ -83,7 +81,10 @@ export function SettingsWindow({
                           : "text-foreground/80 hover:bg-fill-hover"
                       )}
                     >
-                      <AppIcon icon={tab.icon} tone={tab.tone} size={22} />
+                      <tab.icon
+                        className="h-[17px] w-[17px] shrink-0"
+                        strokeWidth={2}
+                      />
                       {tab.label}
                     </button>
                   ))}
