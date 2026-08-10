@@ -519,7 +519,7 @@ function SetupGuide({
   const allDone = done === tasks.length;
 
   return (
-    <div className="hairline absolute right-3 bottom-12 z-30 w-[286px] overflow-hidden rounded-[10px] bg-popover shadow-[0_20px_44px_-12px_rgb(0_0_0/0.5)]">
+    <div className="hairline absolute right-3 bottom-11 z-30 w-[286px] overflow-hidden rounded-[10px] bg-popover shadow-[0_20px_44px_-12px_rgb(0_0_0/0.5)]">
       <div className="flex items-center gap-1 px-3.5 pt-3">
         <span className="flex-1 text-[13px] font-semibold text-foreground">
           Setup guide
@@ -2334,7 +2334,7 @@ export default function SettingsPage() {
       )}
     >
       <MacWindow width="1020px" height="700px">
-        <div className="flex min-h-0 flex-1">
+        <div className="flex min-h-0 flex-1 gap-2 px-2 pt-2">
           <DailyNav
             active={active}
             onSelect={setActive}
@@ -2345,17 +2345,18 @@ export default function SettingsPage() {
             collapsed={!sidebarOpen}
             onToggleCollapsed={() => setSidebarOpen((v) => !v)}
           />
-          {/* Flush to the top and right window edges — only the sidebar has to
-              stay clear for the traffic lights. */}
-          <div className="hairline-l min-w-0 flex-1 overflow-y-auto bg-background px-14 py-12">
+          {/* Workbench pane: bordered on all sides and floating in the chrome.
+              It starts at the top of the window rather than below a title
+              strip — the sidebar absorbs the traffic lights instead. */}
+          <div className="hairline min-w-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-14 py-12">
             <div className="mx-auto flex max-w-[560px] flex-col gap-8">
               <DailyPanel onOpenModels={() => openSettingsAt("models")} />
             </div>
           </div>
         </div>
 
-        {/* Window-wide status bar, outside the content pane. */}
-        <div className="hairline-t flex h-9 shrink-0 items-center justify-end gap-1 px-3">
+        {/* Status bar sits in the chrome gutter, outside the pane. */}
+        <div className="flex h-10 shrink-0 items-center justify-end gap-1 px-3">
           {!setupOpen && !allSetupDone && (
             <button
               onClick={() => {
