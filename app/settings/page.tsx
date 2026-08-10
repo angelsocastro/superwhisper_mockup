@@ -11,6 +11,8 @@ import {
   History as HistoryIcon,
   Cloud,
   Sparkles,
+  GripVertical,
+  ChevronUp,
   Lock,
   EyeOff,
   X,
@@ -1897,14 +1899,108 @@ function ShortcutsPanel() {
 /*                               settings: Sound                               */
 /* -------------------------------------------------------------------------- */
 
-function SoundPanel() {
+type MicDevice = { id: string; name: string; connected: boolean };
+
+const MICS_SEED: MicDevice[] = [
+  { id: "shure", name: "Shure MV7", connected: false },
+  { id: "airpods", name: "AirPods Pro", connected: true },
+  { id: "builtin", name: "MacBook Air Microphone", connected: true },
+];
+
+/**
+ * A ranked fallback rather than one fixed device. Roughly ten roadmap
+ * requests are the same complaint — plugging in or undocking loses the
+ * choice — which a single "default microphone" can't express.
+ */
+function MicPriorityList({
+  mics,
+  onReorder,
+}: {
+  mics: MicDevice[];
+  onReorder: (from: number, to: number) => void;
+}) {
+  const activeId = mics.find((m) => m.connected)?.id;
+
+  return (
+    <div className="flex flex-col">
+      {mics.map((mic, i) => (
+        <div
+          key={mic.id}
+          className={cn(
+            "flex items-center gap-2.5 px-4 py-2.5",
+            i !== mics.length - 1 && "border-b border-line"
+          )}
+        >
+          <GripVertical
+            className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/50"
+            strokeWidth={2}
+          />
+          <span className="w-4 shrink-0 text-[12px] text-muted-foreground tabular-nums">
+            {i + 1}
+          </span>
+          <span className="flex-1 text-[13px] font-medium text-foreground">
+            {mic.name}
+          </span>
+
+          {mic.id === activeId && (
+            <span className="shrink-0 rounded-[4px] bg-primary/15 px-1.5 py-px text-[10px] font-semibold tracking-wide text-primary uppercase">
+              In use
+            </span>
+          )}
+          <span
+            className={cn(
+              "shrink-0 text-[11px]",
+              mic.connected ? "text-muted-foreground" : "text-muted-foreground/50"
+            )}
+          >
+            {mic.connected ? "Connected" : "Not connected"}
+          </span>
+
+          <div className="flex shrink-0 items-center">
+            <button
+              onClick={() => onReorder(i, i - 1)}
+              disabled={i === 0}
+              aria-label={`Move ${mic.name} up`}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
+            >
+              <ChevronUp className="h-4 w-4" strokeWidth={2} />
+            </button>
+            <button
+              onClick={() => onReorder(i, i + 1)}
+              disabled={i === mics.length - 1}
+              aria-label={`Move ${mic.name} down`}
+              className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground disabled:pointer-events-none disabled:opacity-25"
+            >
+              <ChevronDown className="h-4 w-4" strokeWidth={2} />
+            </button>
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+function SoundPanel({
+  mics,
+  onReorderMics,
+}: {
+  mics: MicDevice[];
+  onReorderMics: (from: number, to: number) => void;
+}) {
   const [soundStyle, setSoundStyle] = useState("classic");
   const [volume, setVolume] = useState([85]);
 
   return (
     <div className="flex flex-col gap-8">
       <SettingsSection
-        title="Microphone"
+        title="Microphone priority"
+        description="Superwhisper records with the first one that's connected, so docking or swapping headphones doesn't lose your choice."
+      >
+        <MicPriorityList mics={mics} onReorder={onReorderMics} />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Input"
         description="How your voice is captured and cleaned up before transcription."
       >
         <SettingsRow
@@ -2995,6 +3091,16 @@ export default function SettingsPage() {
   const [modesEnabled, setModesEnabled] = useState(false);
   const [modes, setModes] = useState<ModeItem[]>(MODES_SEED);
   const [base, setBase] = useState<BaseSettings>(BASE_DEFAULTS);
+  const [mics, setMics] = useState<MicDevice[]>(MICS_SEED);
+
+  const reorderMics = (from: number, to: number) =>
+    setMics((prev) => {
+      if (to < 0 || to >= prev.length) return prev;
+      const next = [...prev];
+      const [moved] = next.splice(from, 1);
+      next.splice(to, 0, moved);
+      return next;
+    });
 
   const setBaseValue = (key: SettingKey, value: BaseSettings[SettingKey]) =>
     setBase((prev) => ({ ...prev, [key]: value }));
@@ -3102,7 +3208,7 @@ export default function SettingsPage() {
       ) : settingsTab === "privacy" ? (
         <PrivacyPanel base={base} onChange={setBaseValue} modes={modes} />
       ) : settingsTab === "sound" ? (
-        <SoundPanel />
+        <SoundPanel mics={mics} onReorderMics={reorderMics} />
       ) : settingsTab === "models" ? (
         <ModelsPanel />
       ) : (
@@ -3168,8 +3274,11 @@ export default function SettingsPage() {
                   </span>
                 </button>
               )}
-              <button className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground">
-                MacBook Air Microphone
+              <button
+                onClick={() => openSettingsAt("sound")}
+                className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+              >
+                {mics.find((m) => m.connected)?.name ?? "No microphone"}
                 <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
               </button>
             </div>
