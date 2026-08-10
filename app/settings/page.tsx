@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useSyncExternalStore } from "react";
 import {
   Home as HomeIcon,
   BookOpen,
@@ -12,7 +12,6 @@ import {
   History as HistoryIcon,
   Mic,
   Cloud,
-  HardDrive,
   Sparkles,
   Lock,
   EyeOff,
@@ -44,7 +43,7 @@ import {
   Type,
   type LucideIcon,
 } from "lucide-react";
-import { MacWindow } from "@/components/mac-window";
+import { MacWindow, TrafficLights } from "@/components/mac-window";
 import { SettingsWindow, type SettingsTab } from "@/components/settings-window";
 import { DetailModal } from "@/components/detail-modal";
 import { SettingsSection, SettingsRow } from "@/components/settings-parts";
@@ -182,21 +181,25 @@ const HISTORY_GROUPS: { label: string; items: string[] }[] = [
 
 type ThemePref = "auto" | "light" | "dark";
 
+const DARK_SCHEME = "(prefers-color-scheme: dark)";
+
+function subscribeToScheme(onChange: () => void) {
+  const mq = window.matchMedia(DARK_SCHEME);
+  mq.addEventListener("change", onChange);
+  return () => mq.removeEventListener("change", onChange);
+}
+
 /**
- * Resolves the Theme preference to an actual appearance. "auto" tracks the
- * OS setting live, the way a real Mac app would. Starts as null so the first
- * paint matches the server and hydration stays clean.
+ * Resolves the Theme preference to an actual appearance. "auto" tracks the OS
+ * setting live, the way a real Mac app would. The server snapshot is `false`
+ * so the first paint matches the markup and hydration stays clean.
  */
 function useResolvedTheme(pref: ThemePref) {
-  const [systemDark, setSystemDark] = useState<boolean | null>(null);
-
-  useEffect(() => {
-    const mq = window.matchMedia("(prefers-color-scheme: dark)");
-    setSystemDark(mq.matches);
-    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
-    mq.addEventListener("change", onChange);
-    return () => mq.removeEventListener("change", onChange);
-  }, []);
+  const systemDark = useSyncExternalStore(
+    subscribeToScheme,
+    () => window.matchMedia(DARK_SCHEME).matches,
+    () => false
+  );
 
   if (pref === "light") return "light";
   if (pref === "dark") return "dark";
@@ -231,11 +234,6 @@ const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
   { key: "advanced", label: "Advanced", icon: Wrench, group: 2 },
 ];
 
-const TITLES: Record<DailyKey, string> = {
-  home: "Superwhisper",
-  vocabulary: "Vocabulary",
-};
-
 /* -------------------------------------------------------------------------- */
 /*                                shared bits                                  */
 /* -------------------------------------------------------------------------- */
@@ -246,6 +244,18 @@ function InfoDot() {
       className="ml-1 inline h-3 w-3 shrink-0 align-[-1px] text-muted-foreground/60"
       strokeWidth={2}
     />
+  );
+}
+
+/**
+ * macOS help tag: only meaningful while a rail is collapsed to icons.
+ * Delayed so it doesn't flash as the pointer crosses the rail.
+ */
+function HoverTip({ label }: { label: string }) {
+  return (
+    <span className="hairline pointer-events-none absolute left-full z-30 ml-2 whitespace-nowrap rounded-[6px] bg-popover px-2 py-1 text-[12px] font-medium text-popover-foreground opacity-0 shadow-[0_4px_12px_-2px_rgb(0_0_0/0.35)] transition-opacity delay-500 duration-100 group-hover:opacity-100">
+      {label}
+    </span>
   );
 }
 
@@ -365,6 +375,7 @@ function DailyNav({
   onOpenAccount,
   whatsNew,
   onOpenWhatsNew,
+  collapsed,
 }: {
   active: DailyKey;
   onSelect: (key: DailyKey) => void;
@@ -372,48 +383,71 @@ function DailyNav({
   onOpenAccount: () => void;
   whatsNew: WhatsNewItem[];
   onOpenWhatsNew: (item: WhatsNewItem) => void;
+  collapsed: boolean;
 }) {
   return (
-    <aside className="flex w-[230px] shrink-0 flex-col px-3 py-6">
-      <div className="flex flex-col gap-1">
+    <aside
+      className={cn(
+        "flex shrink-0 flex-col px-2 pt-1 pb-4 transition-[width] duration-200 ease-out",
+        collapsed ? "w-[52px] items-center" : "w-[230px]"
+      )}
+    >
+      <div className="flex w-full flex-col gap-1">
         {DAILY_USE.map((item) => (
           <button
             key={item.key}
             onClick={() => onSelect(item.key)}
             className={cn(
-              "flex items-center gap-2.5 rounded-[7px] px-2 py-1.5 text-left text-[13px] font-medium transition-colors",
+              "group relative flex items-center rounded-[7px] py-1.5 text-left text-[13px] font-medium transition-colors",
+              collapsed ? "justify-center px-0" : "gap-2.5 px-2",
               active === item.key
                 ? "bg-fill-strong text-foreground"
                 : "text-foreground/80 hover:bg-fill-hover"
             )}
           >
             <item.icon className="h-[17px] w-[17px] shrink-0" strokeWidth={2} />
-            {item.label}
+            {collapsed ? <HoverTip label={item.label} /> : item.label}
           </button>
         ))}
       </div>
 
-      <div className="mt-auto flex flex-col gap-4">
-        <WhatsNewStack items={whatsNew} onOpen={onOpenWhatsNew} />
+      <div className="mt-auto flex w-full flex-col gap-4">
+        {!collapsed && (
+          <WhatsNewStack items={whatsNew} onOpen={onOpenWhatsNew} />
+        )}
 
-        <div className="flex items-center gap-2 border-t border-line pt-4">
+        <div
+          className={cn(
+            "flex items-center border-t border-line pt-4",
+            collapsed ? "flex-col gap-2" : "gap-2"
+          )}
+        >
           <button
             onClick={onOpenAccount}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-[6px] px-1 py-1 text-left transition-colors hover:bg-fill-hover"
+            aria-label={collapsed ? "Account" : undefined}
+            className={cn(
+              "group relative flex items-center rounded-[6px] py-1 text-left transition-colors hover:bg-fill-hover",
+              collapsed ? "justify-center px-1" : "min-w-0 flex-1 gap-2 px-1"
+            )}
           >
             <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[11px] font-semibold">
               A
             </div>
-            <span className="truncate text-[12px] font-medium text-foreground/80">
-              Superwhisper <span className="text-muted-foreground">PRO</span>
-            </span>
+            {collapsed ? (
+              <HoverTip label="Superwhisper PRO" />
+            ) : (
+              <span className="truncate text-[12px] font-medium text-foreground/80">
+                Superwhisper <span className="text-muted-foreground">PRO</span>
+              </span>
+            )}
           </button>
           <button
             onClick={onOpenSettings}
             aria-label="Open Settings"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+            className="group relative flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <SettingsIcon className="h-[15px] w-[15px]" strokeWidth={2} />
+            {collapsed && <HoverTip label="Settings" />}
           </button>
         </div>
       </div>
@@ -2178,36 +2212,39 @@ export default function SettingsPage() {
         appearance === "dark" && "dark"
       )}
     >
-      <MacWindow title={TITLES[active]} width="1020px" height="700px">
-        <div className="flex h-full gap-2 bg-chrome p-2">
-          {sidebarOpen && (
-            <DailyNav
-              active={active}
-              onSelect={setActive}
-              onOpenSettings={() => openSettingsAt("general")}
-              onOpenAccount={() => setAccountOpen(true)}
-              whatsNew={whatsNewStack}
-              onOpenWhatsNew={openWhatsNew}
+      <MacWindow width="1020px" height="700px">
+        {/* Traffic lights share the top row with real controls, the way apps
+            with a sidebar do — no title bar of their own, no centred title. */}
+        <div className="flex h-11 shrink-0 items-center gap-1 px-4">
+          <TrafficLights />
+          <button
+            onClick={() => setSidebarOpen((v) => !v)}
+            aria-label="Toggle sidebar"
+            className="ml-3 flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+          >
+            <PanelLeft className="h-[16px] w-[16px]" strokeWidth={2} />
+          </button>
+          <button className="ml-auto flex items-center gap-2 rounded-[6px] px-2 py-1 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-fill-hover">
+            MacBook Air Microphone
+            <Headphones
+              className="h-[15px] w-[15px] text-muted-foreground"
+              strokeWidth={2}
             />
-          )}
-          <div className="hairline flex min-w-0 flex-1 flex-col overflow-hidden rounded-[10px] bg-background">
-            <div className="hairline-b flex h-11 shrink-0 items-center justify-between px-3">
-              <button
-                onClick={() => setSidebarOpen((v) => !v)}
-                aria-label="Toggle sidebar"
-                className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-              >
-                <PanelLeft className="h-[16px] w-[16px]" strokeWidth={2} />
-              </button>
-              <button className="flex items-center gap-2 rounded-[6px] px-2 py-1 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-fill-hover">
-                MacBook Air Microphone
-                <Headphones
-                  className="h-[15px] w-[15px] text-muted-foreground"
-                  strokeWidth={2}
-                />
-              </button>
-            </div>
-            <div className="min-h-0 flex-1 overflow-y-auto px-14 py-12">
+          </button>
+        </div>
+
+        <div className="flex min-h-0 flex-1 gap-2 px-2 pb-2">
+          <DailyNav
+            active={active}
+            onSelect={setActive}
+            onOpenSettings={() => openSettingsAt("general")}
+            onOpenAccount={() => setAccountOpen(true)}
+            whatsNew={whatsNewStack}
+            onOpenWhatsNew={openWhatsNew}
+            collapsed={!sidebarOpen}
+          />
+          <div className="hairline min-w-0 flex-1 overflow-hidden rounded-[10px] bg-background">
+            <div className="h-full overflow-y-auto px-14 py-12">
               <div className="mx-auto flex max-w-[560px] flex-col gap-8">
                 <DailyPanel
                   onOpenModels={() => openSettingsAt("models")}

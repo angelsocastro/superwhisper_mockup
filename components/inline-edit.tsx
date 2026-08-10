@@ -34,9 +34,12 @@ export function InlineEdit({
     }
   }, [editing]);
 
-  useEffect(() => {
-    if (!editing) setDraft(value);
-  }, [value, editing]);
+  /** Seeded on entry rather than synced by an effect, so `value` changing
+   *  mid-edit can't yank the text out from under the caret. */
+  const beginEditing = () => {
+    setDraft(value);
+    setEditing(true);
+  };
 
   const commit = () => {
     const next = draft.trim();
@@ -82,7 +85,7 @@ export function InlineEdit({
   return (
     <button
       type="button"
-      onClick={() => setEditing(true)}
+      onClick={beginEditing}
       className={cn(
         "-mx-1.5 -my-0.5 max-w-full rounded-[5px] border border-transparent px-1.5 py-0.5 text-left text-inherit transition-colors hover:border-border hover:bg-fill focus-visible:border-primary/50 focus-visible:outline-none",
         className
