@@ -2224,13 +2224,6 @@ export default function SettingsPage() {
           >
             <PanelLeft className="h-[16px] w-[16px]" strokeWidth={2} />
           </button>
-          <button className="ml-auto flex items-center gap-2 rounded-[6px] px-2 py-1 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-fill-hover">
-            MacBook Air Microphone
-            <Headphones
-              className="h-[15px] w-[15px] text-muted-foreground"
-              strokeWidth={2}
-            />
-          </button>
         </div>
 
         <div className="flex min-h-0 flex-1 gap-2 px-2 pb-2">
@@ -2243,14 +2236,22 @@ export default function SettingsPage() {
             onOpenWhatsNew={openWhatsNew}
             collapsed={!sidebarOpen}
           />
-          <div className="hairline min-w-0 flex-1 overflow-hidden rounded-[10px] bg-background">
-            <div className="h-full overflow-y-auto px-14 py-12">
+          <div className="hairline flex min-w-0 flex-1 flex-col overflow-hidden rounded-[10px] bg-background">
+            <div className="min-h-0 flex-1 overflow-y-auto px-14 py-12">
               <div className="mx-auto flex max-w-[560px] flex-col gap-8">
                 <DailyPanel
                   onOpenModels={() => openSettingsAt("models")}
                   onOpenShortcuts={() => openSettingsAt("shortcuts")}
                 />
               </div>
+            </div>
+            {/* Status bar: the input device is ambient state, not a command,
+                so it reads better parked at the bottom than in the toolbar. */}
+            <div className="hairline-t flex h-9 shrink-0 items-center justify-end px-3">
+              <button className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground">
+                MacBook Air Microphone
+                <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
+              </button>
             </div>
           </div>
         </div>
