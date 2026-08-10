@@ -11,6 +11,7 @@ import {
   History as HistoryIcon,
   Cloud,
   Sparkles,
+  Wand2,
   GripVertical,
   ChevronUp,
   Check,
@@ -38,7 +39,6 @@ import {
   Mail,
   Globe,
   MessageCircle,
-  Lightbulb,
   Asterisk,
   Type,
   CircleCheck,
@@ -198,21 +198,49 @@ type ModeItem = {
   apps: string[];
   /** Only what this mode changes. Anything absent follows Super. */
   overrides: Partial<BaseSettings>;
-  active?: boolean;
+  /** Ships configured and switched off — you enable it, you don't build it. */
+  enabled: boolean;
+  /** Shipped modes can be reset; ones you made can be deleted. */
+  builtIn: boolean;
 };
 
 const MODES_SEED: ModeItem[] = [
   {
+    id: "personal",
+    name: "Personal messages",
+    apps: ["WhatsApp", "Telegram", "Messages"],
+    overrides: { autocapitalize: false, autoSend: true },
+    enabled: true,
+    builtIn: true,
+  },
+  {
+    id: "work",
+    name: "Work messages",
+    apps: ["Slack", "Teams"],
+    overrides: { languages: ["English"] },
+    enabled: true,
+    builtIn: true,
+  },
+  {
     id: "email",
     name: "Email",
     apps: ["Mail", "Spark"],
-    overrides: { languages: ["English"], autoSend: true },
+    overrides: { languages: ["English"], removeFillers: true },
+    enabled: false,
+    builtIn: true,
   },
   {
     id: "meetings",
     name: "Meetings",
     apps: ["Zoom"],
-    overrides: { systemAudio: true, identifySpeakers: true, pasteResult: false },
+    overrides: {
+      systemAudio: true,
+      identifySpeakers: true,
+      pasteResult: false,
+      saveToHistory: true,
+    },
+    enabled: false,
+    builtIn: true,
   },
 ];
 
@@ -377,6 +405,7 @@ type SettingsKey =
   | "shortcuts"
   | "sound"
   | "privacy"
+  | "transforms"
   | "models"
   | "modes";
 /**
@@ -510,6 +539,7 @@ const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
   { key: "privacy", label: "Privacy", icon: Lock, group: 1 },
   { key: "models", label: "Models", icon: BrainCircuit, group: 2 },
   { key: "modes", label: "Modes", icon: Sparkles, group: 2 },
+  { key: "transforms", label: "Transforms", icon: Wand2, group: 2 },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -1647,6 +1677,79 @@ function DictationPanel({
 }
 
 /* -------------------------------------------------------------------------- */
+/*                            settings: Transforms                             */
+/* -------------------------------------------------------------------------- */
+
+type Transform = { id: string; name: string; description: string; key: string };
+
+const TRANSFORMS_SEED: Transform[] = [
+  {
+    id: "polish",
+    name: "Polish",
+    description: "Tightens wording and fixes grammar, keeps your voice.",
+    key: "⌥ 1",
+  },
+  {
+    id: "shorten",
+    name: "Shorten",
+    description: "Cuts it down without losing anything that matters.",
+    key: "⌥ 2",
+  },
+  {
+    id: "reply",
+    name: "Draft a reply",
+    description: "Turns notes into a reply to whatever you're looking at.",
+    key: "⌥ 3",
+  },
+];
+
+/**
+ * On-demand rewrites of text that already exists, invoked by hotkey — not a
+ * mode. Modes decide how dictation comes out; a transform is something you
+ * run afterwards, which is why the two don't belong in the same list.
+ */
+function TransformsPanel({ transforms }: { transforms: Transform[] }) {
+  return (
+    <div className="flex flex-col gap-8">
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        Select text anywhere, press a shortcut, and Superwhisper rewrites it in
+        place. Unlike a mode, a transform runs on text that already exists —
+        including text you didn&rsquo;t dictate.
+      </p>
+
+      <SettingsSection
+        title="Your transforms"
+        description="Each one is a prompt with a shortcut attached."
+      >
+        {transforms.map((t, i) => (
+          <SettingsRow
+            key={t.id}
+            label={t.name}
+            description={t.description}
+            last={i === transforms.length - 1}
+            control={
+              <div className="flex items-center gap-2">
+                <Kbd>{t.key}</Kbd>
+                <ChevronRight
+                  className="h-4 w-4 text-muted-foreground"
+                  strokeWidth={2}
+                />
+              </div>
+            }
+            onClick={() => {}}
+          />
+        ))}
+      </SettingsSection>
+
+      <div className="flex items-center gap-2">
+        <GhostButton>+ Create transform</GhostButton>
+        <GhostButton>Reset to defaults</GhostButton>
+      </div>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*                              settings: Privacy                              */
 /* -------------------------------------------------------------------------- */
 
@@ -2340,120 +2443,153 @@ function ModelsPanel() {
 
 /** The Modes list lives inline here rather than behind a nav row: the pane
  *  held a single toggle otherwise, and Modes sat three levels deep. */
+/** Resolves a mode against the base — the same merge the app would do. */
+function resolveMode(base: BaseSettings, mode?: ModeItem): BaseSettings {
+  return mode ? { ...base, ...mode.overrides } : base;
+}
+
+const SAMPLE_BY_LANGUAGE: Record<string, string> = {
+  English:
+    "hey joey we still on for coffee i think we should um leave earlier there might be traffic",
+  Spanish:
+    "oye joey seguimos con el café creo que eh deberíamos salir antes que igual hay tráfico",
+};
+
+/**
+ * Renders the same dictation under a given set of settings. Reading the
+ * result beats reading "Autocapitalize: On → Off" — it's how Wispr Flow
+ * lets you pick a style, and it's the part worth borrowing.
+ */
+function renderSample(settings: BaseSettings): string {
+  const lang = settings.languages[0] ?? "English";
+  let text = SAMPLE_BY_LANGUAGE[lang] ?? SAMPLE_BY_LANGUAGE.English;
+
+  if (settings.removeFillers) {
+    text = text.replace(/\b(um|eh)\s/g, "");
+  }
+  if (settings.autocapitalize) {
+    text = text.charAt(0).toUpperCase() + text.slice(1) + ".";
+  }
+  return text;
+}
+
+function SamplePreview({
+  base,
+  mode,
+}: {
+  base: BaseSettings;
+  mode: ModeItem;
+}) {
+  const withMode = renderSample(resolveMode(base, mode));
+  const asSuper = renderSample(base);
+  const identical = withMode === asSuper;
+
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-[15px] font-semibold text-foreground">
+        How it comes out
+      </h2>
+      <div className="hairline overflow-hidden rounded-[10px] bg-card">
+        <div className="flex flex-col gap-1.5 px-4 py-3">
+          <span className="text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+            As Super
+          </span>
+          <p className="text-[13px] leading-relaxed text-muted-foreground italic">
+            {asSuper}
+          </p>
+        </div>
+        <Separator className="ml-4 bg-line" />
+        <div className="flex flex-col gap-1.5 px-4 py-3">
+          <span className="text-[11px] font-semibold tracking-wide text-primary uppercase">
+            In this mode
+          </span>
+          <p className="text-[13px] leading-relaxed text-foreground italic">
+            {withMode}
+          </p>
+        </div>
+      </div>
+      {identical && (
+        <p className="text-[12px] text-muted-foreground">
+          Same as Super — this mode&rsquo;s overrides don&rsquo;t change how the
+          text reads.
+        </p>
+      )}
+    </section>
+  );
+}
+
 function ModesPanel({
-  modesEnabled,
-  setModesEnabled,
   modes,
+  base,
   onOpenMode,
+  onToggleMode,
   onRename,
 }: {
-  modesEnabled: boolean;
-  setModesEnabled: (v: boolean) => void;
   modes: ModeItem[];
+  base: BaseSettings;
   onOpenMode: (id: string) => void;
+  onToggleMode: (id: string, enabled: boolean) => void;
   onRename: (id: string, name: string) => void;
 }) {
-  const [tipDismissed, setTipDismissed] = useState(false);
+  const on = modes.filter((m) => m.enabled).length;
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingsSection
-        title="Modes"
-        description="Modes let you define custom behaviors per app. This is a fallback for when a cloud model isn't reachable — Super covers everyday use without it."
-      >
-        <SettingsRow
-          label="Enable custom Modes"
-          description={
-            modesEnabled
-              ? "Modes are available as a manual override."
-              : "Off — Super is used for everything, including offline."
-          }
-          last
-          control={
-            <Switch
-              size="sm"
-              checked={modesEnabled}
-              onCheckedChange={(c) => setModesEnabled(c === true)}
-            />
-          }
-        />
-      </SettingsSection>
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        Super handles everything on its own. A mode only kicks in for the apps
+        you point it at, and only changes what it lists — so you switch one on
+        rather than building one. {on} of {modes.length} are on.
+      </p>
 
-      {modesEnabled && (
-        <div className="flex flex-col gap-4">
-          <div className="flex items-center justify-between">
-            <h2 className="text-[15px] font-semibold text-foreground">
-              Your modes
-            </h2>
-            <GhostButton>+ Create mode</GhostButton>
-          </div>
+      <section className="flex flex-col gap-4">
+        <div className="flex items-center justify-between">
+          <h2 className="text-[15px] font-semibold text-foreground">Modes</h2>
+          <GhostButton>+ Create mode</GhostButton>
+        </div>
 
-          <div className="flex flex-col gap-2">
-            {modes.map((mode) => (
+        <div className="flex flex-col gap-2">
+          {modes.map((mode) => {
+            const count = Object.keys(mode.overrides).length;
+            return (
               <div
                 key={mode.id}
-                className="hairline flex items-center gap-2.5 rounded-[9px] bg-card px-3.5 py-3"
-              >
-                <Sparkles
-                  className="h-4 w-4 shrink-0 text-muted-foreground"
-                  strokeWidth={2}
-                />
-                <span className="text-[13px] font-medium text-foreground">
-                  <InlineEdit
-                    value={mode.name}
-                    onChange={(name) => onRename(mode.id, name)}
-                  />
-                </span>
-                {mode.active && (
-                  <span
-                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#28c840]"
-                    title="Active mode"
-                  />
+                className={cn(
+                  "hairline flex items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-opacity",
+                  !mode.enabled && "opacity-55"
                 )}
-                <div className="ml-auto flex shrink-0 items-center gap-2.5">
-                  <span className="text-[12px] text-muted-foreground">
-                    {Object.keys(mode.overrides).length === 0
-                      ? "Follows Super"
-                      : `${Object.keys(mode.overrides).length} override${
-                          Object.keys(mode.overrides).length === 1 ? "" : "s"
-                        }`}
-                  </span>
-                  <button
-                    onClick={() => onOpenMode(mode.id)}
-                    aria-label={`Open ${mode.name}`}
-                    className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-                  >
-                    <ChevronRight className="h-4 w-4" strokeWidth={2} />
-                  </button>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {!tipDismissed && (
-            <div className="hairline flex items-start gap-3 rounded-[10px] bg-card px-4 py-3.5">
-              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#febc2e]/15 text-[#febc2e]">
-                <Lightbulb className="h-4 w-4" strokeWidth={2} />
-              </span>
-              <div className="flex flex-1 flex-col gap-1">
-                <span className="text-[13px] font-medium text-foreground">
-                  Auto-switch with activation
-                </span>
-                <span className="text-[12px] leading-relaxed text-muted-foreground">
-                  Link a mode to specific apps or websites so Superwhisper picks
-                  the right one automatically when you record.
-                </span>
-              </div>
-              <button
-                onClick={() => setTipDismissed(true)}
-                className="shrink-0 text-[12px] font-medium text-muted-foreground hover:text-foreground"
               >
-                Dismiss
-              </button>
-            </div>
-          )}
+                <Switch
+                  size="sm"
+                  checked={mode.enabled}
+                  onCheckedChange={(c) => onToggleMode(mode.id, c === true)}
+                />
+                <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                  <span className="text-[13px] font-medium text-foreground">
+                    <InlineEdit
+                      value={mode.name}
+                      onChange={(name) => onRename(mode.id, name)}
+                    />
+                  </span>
+                  <span className="truncate text-[12px] text-muted-foreground">
+                    {mode.apps.join(", ")} · {count}{" "}
+                    {count === 1 ? "override" : "overrides"}
+                  </span>
+                  <span className="truncate text-[12px] text-foreground/55 italic">
+                    {renderSample(resolveMode(base, mode))}
+                  </span>
+                </div>
+                <button
+                  onClick={() => onOpenMode(mode.id)}
+                  aria-label={`Open ${mode.name}`}
+                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+                >
+                  <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                </button>
+              </div>
+            );
+          })}
         </div>
-      )}
+      </section>
     </div>
   );
 }
@@ -2589,6 +2725,8 @@ function ModeDetailPanel({
           </>
         )}
       </p>
+
+      <SamplePreview base={base} mode={mode} />
 
       <section className="flex flex-col gap-4">
         <h2 className="text-[15px] font-semibold text-foreground">
@@ -3138,7 +3276,6 @@ export default function SettingsPage() {
   const [whatsNewItem, setWhatsNewItem] = useState<WhatsNewItem | null>(null);
   const [whatsNewStack, setWhatsNewStack] =
     useState<WhatsNewItem[]>(WHATS_NEW_SEED);
-  const [modesEnabled, setModesEnabled] = useState(false);
   const [modes, setModes] = useState<ModeItem[]>(MODES_SEED);
   const [base, setBase] = useState<BaseSettings>(BASE_DEFAULTS);
   const [mics, setMics] = useState<MicDevice[]>(MICS_SEED);
@@ -3209,6 +3346,11 @@ export default function SettingsPage() {
     setSettingsOpen(true);
   };
 
+  const toggleMode = (id: string, enabled: boolean) =>
+    setModes((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, enabled } : m))
+    );
+
   const renameMode = (id: string, name: string) =>
     setModes((prev) => prev.map((m) => (m.id === id ? { ...m, name } : m)));
 
@@ -3261,6 +3403,8 @@ export default function SettingsPage() {
         <DictationPanel managed={isManaged} base={base} onChange={setBaseValue} />
       ) : settingsTab === "shortcuts" ? (
         <ShortcutsPanel />
+      ) : settingsTab === "transforms" ? (
+        <TransformsPanel transforms={TRANSFORMS_SEED} />
       ) : settingsTab === "privacy" ? (
         <PrivacyPanel base={base} onChange={setBaseValue} modes={modes} />
       ) : settingsTab === "sound" ? (
@@ -3269,10 +3413,10 @@ export default function SettingsPage() {
         <ModelsPanel />
       ) : (
         <ModesPanel
-          modesEnabled={modesEnabled}
-          setModesEnabled={setModesEnabled}
           modes={modes}
+          base={base}
           onOpenMode={(id) => setSubpage({ kind: "modeDetail", modeId: id })}
+          onToggleMode={toggleMode}
           onRename={renameMode}
         />
       );
@@ -3315,6 +3459,16 @@ export default function SettingsPage() {
             {/* Status bar sits in the chrome gutter, outside the pane, so the
                 sidebar can run the full height of the window. */}
             <div className="flex h-8 shrink-0 items-center justify-end gap-1 px-1">
+              {/* Which mode is live is a glanceable fact, not a place to
+                  navigate to — so it sits here rather than in the sidebar. */}
+              <button
+                onClick={() => openSettingsAt("modes")}
+                title="Active mode"
+                className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+              >
+                <Sparkles className="h-[13px] w-[13px]" strokeWidth={2} />
+                {modes.find((m) => m.enabled)?.name ?? "Super"}
+              </button>
               {!setupOpen && !allSetupDone && (
                 <button
                   onClick={() => setSetupOpen(true)}
