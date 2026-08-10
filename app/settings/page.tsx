@@ -127,6 +127,9 @@ type BaseSettings = {
   simulateKeypresses: boolean;
   systemAudio: boolean;
   identifySpeakers: boolean;
+  saveAudio: boolean;
+  saveToHistory: boolean;
+  copyToClipboard: boolean;
   voiceModel: string;
   languageModel: string;
   playback: string;
@@ -142,6 +145,9 @@ const BASE_DEFAULTS: BaseSettings = {
   simulateKeypresses: false,
   systemAudio: false,
   identifySpeakers: false,
+  saveAudio: true,
+  saveToHistory: true,
+  copyToClipboard: true,
   voiceModel: "S1-Voice",
   languageModel: "Sonnet 4.5",
   playback: "Pause",
@@ -170,6 +176,9 @@ const SETTING_DEFS: SettingDef[] = [
   { key: "systemAudio", label: "Record from system audio", group: "Capture", kind: "switch" },
   { key: "identifySpeakers", label: "Identify speakers", group: "Capture", kind: "switch" },
   { key: "playback", label: "Playback when recording", group: "Capture", kind: "choice", choices: ["Pause", "Mute", "Keep playing"] },
+  { key: "saveAudio", label: "Save audio recordings", group: "Privacy", kind: "switch" },
+  { key: "saveToHistory", label: "Save to history", group: "Privacy", kind: "switch" },
+  { key: "copyToClipboard", label: "Copy result to clipboard", group: "Privacy", kind: "switch" },
   { key: "voiceModel", label: "Voice model", group: "Models", kind: "choice", choices: ["S1-Voice", "Cohere Transcribe", "Nova 3"] },
   { key: "languageModel", label: "Language model", group: "Models", kind: "choice", choices: ["Sonnet 4.5", "Haiku 4.5", "S1-Language"] },
 ];
@@ -364,6 +373,7 @@ type SettingsKey =
   | "dictation"
   | "shortcuts"
   | "sound"
+  | "privacy"
   | "models"
   | "modes";
 /**
@@ -494,6 +504,7 @@ const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
   { key: "dictation", label: "Dictation", icon: Type, group: 1 },
   { key: "shortcuts", label: "Shortcuts", icon: Keyboard, group: 1 },
   { key: "sound", label: "Sound", icon: Volume2, group: 1 },
+  { key: "privacy", label: "Privacy", icon: Lock, group: 1 },
   { key: "models", label: "Models", icon: BrainCircuit, group: 2 },
   { key: "modes", label: "Modes", icon: Sparkles, group: 2 },
 ];
@@ -1507,32 +1518,6 @@ function GeneralPanel({
         />
       </SettingsSection>
 
-      <SettingsSection
-        title="Privacy & data"
-        description="Recordings stay on this Mac unless you pick a cloud model."
-      >
-        <SettingsRow
-          label={
-            <span>
-              Keep recordings for
-              <InfoDot />
-            </span>
-          }
-          control={<PopupButton value="Forever" />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Error logging
-              <InfoDot />
-            </span>
-          }
-          description="Send anonymous crash reports to help fix bugs."
-          last
-          control={<Switch size="sm" defaultChecked={false} />}
-        />
-      </SettingsSection>
-
       <div className="hairline overflow-hidden rounded-[10px] bg-card">
         <NavRow label="System & integrations" onClick={onOpenSystem} />
       </div>
@@ -1673,6 +1658,145 @@ function DictationPanel({
           locked: true,
         })}
       </SettingsSection>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              settings: Privacy                              */
+/* -------------------------------------------------------------------------- */
+
+function PrivacyPanel({
+  base,
+  onChange,
+  modes,
+}: {
+  base: BaseSettings;
+  onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
+  modes: ModeItem[];
+}) {
+  const excluded = modes.filter((m) => m.overrides.saveToHistory === false);
+
+  return (
+    <div className="flex flex-col gap-8">
+      <SettingsSection
+        title="What gets kept"
+        description="Nothing is uploaded unless you pick a cloud model. These control what stays on this Mac afterwards."
+      >
+        <SettingsRow
+          label={
+            <span>
+              Save audio recordings
+              <InfoDot />
+            </span>
+          }
+          description={
+            base.saveAudio
+              ? "The original audio is kept alongside the transcript."
+              : "Off — only the text is kept, the audio is discarded."
+          }
+          control={
+            <Switch
+              size="sm"
+              checked={base.saveAudio}
+              onCheckedChange={(c) => onChange("saveAudio", c === true)}
+            />
+          }
+        />
+        <SettingsRow
+          label={
+            <span>
+              Save to history
+              <InfoDot />
+            </span>
+          }
+          description={
+            excluded.length > 0
+              ? `${excluded.length} mode${
+                  excluded.length === 1 ? "" : "s"
+                } override this (${excluded.map((m) => m.name).join(", ")})`
+              : "Any mode can override this to stay out of history."
+          }
+          control={
+            <Switch
+              size="sm"
+              checked={base.saveToHistory}
+              onCheckedChange={(c) => onChange("saveToHistory", c === true)}
+            />
+          }
+        />
+        <SettingsRow
+          label={
+            <span>
+              Keep history for
+              <InfoDot />
+            </span>
+          }
+          last
+          control={<PopupButton value="Forever" />}
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Clipboard"
+        description="Superwhisper copies each result so you can paste it again."
+      >
+        <SettingsRow
+          label={
+            <span>
+              Copy result to clipboard
+              <InfoDot />
+            </span>
+          }
+          description="Turn off if a clipboard manager is picking up every dictation."
+          last
+          control={
+            <Switch
+              size="sm"
+              checked={base.copyToClipboard}
+              onCheckedChange={(c) => onChange("copyToClipboard", c === true)}
+            />
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Files"
+        description="Where recordings and transcripts live on disk."
+      >
+        <SettingsRow
+          label={
+            <span className="font-mono text-[12px] text-muted-foreground">
+              /Users/angelsocastro/superwhisper
+            </span>
+          }
+          control={<GhostButton>Change folder…</GhostButton>}
+        />
+        <SettingsRow
+          label={
+            <span>
+              Error logging
+              <InfoDot />
+            </span>
+          }
+          description="Send anonymous crash reports to help fix bugs."
+          last
+          control={<Switch size="sm" defaultChecked={false} />}
+        />
+      </SettingsSection>
+
+      <div className="hairline overflow-hidden rounded-[10px] bg-card">
+        <SettingsRow
+          label="Delete all history"
+          description="Removes every transcript and recording from this Mac."
+          last
+          control={
+            <button className="hairline rounded-[6px] bg-destructive/12 px-2.5 py-1 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/20">
+              Delete…
+            </button>
+          }
+        />
+      </div>
     </div>
   );
 }
@@ -2240,17 +2364,9 @@ function SystemPanel() {
       </SettingsSection>
 
       <SettingsSection
-        title="Files"
-        description="Where recordings and transcripts are kept."
+        title="Sync"
+        description="Keeps modes, vocabulary and text replacements the same on every Mac."
       >
-        <SettingsRow
-          label={
-            <span className="font-mono text-[12px] text-muted-foreground">
-              /Users/angelsocastro/superwhisper
-            </span>
-          }
-          control={<GhostButton>Change folder…</GhostButton>}
-        />
         <SettingsRow
           label={
             <span>
@@ -2258,6 +2374,7 @@ function SystemPanel() {
               <InfoDot />
             </span>
           }
+          description="The folder itself lives under Privacy."
           last
           control={<GearSwitch />}
         />
@@ -2982,6 +3099,8 @@ export default function SettingsPage() {
         <DictationPanel managed={isManaged} base={base} onChange={setBaseValue} />
       ) : settingsTab === "shortcuts" ? (
         <ShortcutsPanel />
+      ) : settingsTab === "privacy" ? (
+        <PrivacyPanel base={base} onChange={setBaseValue} modes={modes} />
       ) : settingsTab === "sound" ? (
         <SoundPanel />
       ) : settingsTab === "models" ? (
