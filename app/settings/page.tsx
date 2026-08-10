@@ -748,14 +748,19 @@ function Kbd({ children }: { children: React.ReactNode }) {
 function GhostButton({
   children,
   onClick,
+  className,
 }: {
   children: React.ReactNode;
   onClick?: () => void;
+  className?: string;
 }) {
   return (
     <button
       onClick={onClick}
-      className="hairline rounded-[6px] bg-fill-hover px-2.5 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
+      className={cn(
+        "hairline rounded-[6px] bg-fill-hover px-2.5 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong",
+        className,
+      )}
     >
       {children}
     </button>
@@ -1510,49 +1515,50 @@ function DictionaryPanel() {
             { value: "corrections", label: `Corrections (${corrections.length})` },
           ]}
         />
-        <GhostButton onClick={openAdd}>
+        <GhostButton
+          onClick={openAdd}
+          className="rounded-full bg-transparent px-3.5 py-1.5"
+        >
           {tab === "terms" ? "+ Add term" : "+ Add correction"}
         </GhostButton>
       </div>
 
-      <div className="hairline overflow-hidden rounded-[10px] bg-card">
-        {list.length === 0 && (
-          <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
-            {tab === "terms" ? "No terms yet." : "No corrections yet."}
-          </div>
-        )}
-        {list.map((entry, i) => (
-          <SettingsRow
-            key={entry.id}
-            label={
+      {list.length === 0 ? (
+        <div className="hairline rounded-[10px] px-4 py-6 text-center text-[12px] text-muted-foreground">
+          {tab === "terms" ? "No terms yet." : "No corrections yet."}
+        </div>
+      ) : (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5">
+          {list.map((entry) => (
+            <div
+              key={entry.id}
+              className="hairline group relative flex flex-col gap-1 rounded-[10px] bg-card px-3.5 py-3"
+            >
+              <button
+                onClick={() => remove(entry.id)}
+                aria-label={`Remove ${entry.word}`}
+                className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100"
+              >
+                <X className="h-3 w-3" strokeWidth={2} />
+              </button>
               <InlineEdit
                 value={entry.word}
                 onChange={(word) => updateWord(entry.id, word)}
+                className="pr-5 text-[13px] font-medium text-foreground"
               />
-            }
-            description={
-              entry.to !== undefined ? (
-                <span className="flex items-center gap-1">
+              {entry.to !== undefined && (
+                <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
                   →
                   <InlineEdit
                     value={entry.to}
                     onChange={(to) => updateTarget(entry.id, to)}
                   />
                 </span>
-              ) : undefined
-            }
-            last={i === list.length - 1}
-            control={
-              <button
-                onClick={() => remove(entry.id)}
-                className="text-[12px] font-medium text-muted-foreground hover:text-foreground"
-              >
-                Remove
-              </button>
-            }
-          />
-        ))}
-      </div>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
 
       {addOpen && (
         <DetailModal width="360px" onClose={() => setAddOpen(false)}>

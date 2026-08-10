@@ -60,6 +60,7 @@ export function InlineEdit({
     return (
       <input
         ref={inputRef}
+        name="inline-edit"
         value={draft}
         onChange={(e) => setDraft(e.target.value)}
         onBlur={commit}
