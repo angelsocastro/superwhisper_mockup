@@ -41,6 +41,7 @@ import {
   MessageCircle,
   Lightbulb,
   Asterisk,
+  Type,
   type LucideIcon,
 } from "lucide-react";
 import { MacWindow } from "@/components/mac-window";
@@ -169,7 +170,13 @@ const HISTORY_GROUPS: { label: string; items: string[] }[] = [
 ];
 
 type DailyKey = "home" | "vocabulary";
-type SettingsKey = "general" | "shortcuts" | "sound" | "models" | "advanced";
+type SettingsKey =
+  | "general"
+  | "dictation"
+  | "shortcuts"
+  | "sound"
+  | "models"
+  | "advanced";
 type Subpage =
   | { kind: "system" }
   | { kind: "modesList" }
@@ -183,6 +190,7 @@ const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
 
 const SETTINGS_TABS: { key: SettingsKey; label: string; icon: LucideIcon }[] = [
   { key: "general", label: "General", icon: SettingsIcon },
+  { key: "dictation", label: "Dictation", icon: Type },
   { key: "shortcuts", label: "Shortcuts", icon: Keyboard },
   { key: "sound", label: "Sound", icon: Volume2 },
   { key: "models", label: "Models", icon: BrainCircuit },
@@ -1001,6 +1009,149 @@ function GeneralPanel({ onOpenSystem }: { onOpenSystem: () => void }) {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                             settings: Dictation                             */
+/* -------------------------------------------------------------------------- */
+
+/** A switch paired with a gear, the way the app exposes sub-options. */
+function GearSwitch({ defaultChecked = false }: { defaultChecked?: boolean }) {
+  return (
+    <div className="flex items-center gap-2">
+      <button
+        aria-label="Options"
+        className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+      >
+        <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
+      </button>
+      <Switch size="sm" defaultChecked={defaultChecked} />
+    </div>
+  );
+}
+
+function DictationPanel() {
+  return (
+    <div className="flex flex-col gap-8">
+      <SettingsSection
+        title="Language"
+        description="What you speak. Super handles the rest."
+      >
+        <SettingsRow
+          label="Primary language"
+          last={false}
+          control={<PopupButton value="Spanish" />}
+        />
+        <SettingsRow
+          label={
+            <span>
+              Detect language automatically
+              <InfoDot />
+            </span>
+          }
+          description="Switch language mid-sentence without changing this setting."
+          last
+          control={<Switch size="sm" defaultChecked />}
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Formatting"
+        description="How your words are cleaned up before they land in the app."
+      >
+        <SettingsRow
+          label={
+            <span>
+              Autocapitalize
+              <InfoDot />
+            </span>
+          }
+          control={<Switch size="sm" defaultChecked />}
+        />
+        <SettingsRow
+          label={
+            <span>
+              Remove filler words
+              <InfoDot />
+            </span>
+          }
+          description="Drops “um”, “eh”, and false starts."
+          last
+          control={<Switch size="sm" defaultChecked />}
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Output"
+        description="Where the finished text goes and how it gets there."
+      >
+        <SettingsRow
+          label={
+            <span>
+              Paste result text
+              <InfoDot />
+            </span>
+          }
+          control={<Switch size="sm" defaultChecked />}
+        />
+        <SettingsRow
+          label={
+            <span>
+              Hold shift to auto-send after paste
+              <InfoDot />
+            </span>
+          }
+          control={<GearSwitch />}
+        />
+        <SettingsRow
+          label={
+            <span>
+              Clipboard behaviour
+              <InfoDot />
+            </span>
+          }
+          control={<PopupButton value="Default" />}
+        />
+        <SettingsRow
+          label={
+            <span>
+              Simulate keypresses
+              <InfoDot />
+            </span>
+          }
+          description="For apps that don't accept a normal paste."
+          last
+          control={<GearSwitch />}
+        />
+      </SettingsSection>
+
+      <SettingsSection
+        title="Capture"
+        description="What Superwhisper listens to besides your microphone."
+      >
+        <SettingsRow
+          label={
+            <span>
+              Record from system audio
+              <InfoDot />
+            </span>
+          }
+          control={<Switch size="sm" defaultChecked={false} />}
+        />
+        <SettingsRow
+          label={
+            <span>
+              Identify speakers
+              <InfoDot />
+            </span>
+          }
+          description="Labels who said what in multi-person recordings."
+          last
+          control={<Switch size="sm" defaultChecked={false} />}
+        />
+      </SettingsSection>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*                             settings: Shortcuts                             */
 /* -------------------------------------------------------------------------- */
 
@@ -1408,30 +1559,8 @@ function AdvancedPanel({
   setModesEnabled: (v: boolean) => void;
   onOpenModes: () => void;
 }) {
-  const [modelTier, setModelTier] = useState("cloud");
-
   return (
     <div className="flex flex-col gap-8">
-      <SettingsSection
-        title="Transcription"
-        description="Cloud is fastest and most accurate when you're online."
-      >
-        <SettingsRow
-          label="Preferred model"
-          last
-          control={
-            <SegmentedControl
-              value={modelTier}
-              onValueChange={setModelTier}
-              options={[
-                { value: "cloud", label: "Cloud" },
-                { value: "onDevice", label: "On-device" },
-              ]}
-            />
-          }
-        />
-      </SettingsSection>
-
       <SettingsSection
         title="Modes"
         description="Modes let you define custom behaviors per app. This is a fallback for when a cloud model isn't reachable — Super covers everyday use without it."
@@ -1532,66 +1661,6 @@ function SystemPanel() {
             <div className="flex items-center gap-2">
               <button
                 aria-label="Filesync options"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
-              >
-                <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <Switch size="sm" defaultChecked={false} />
-            </div>
-          }
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Text input">
-        <SettingsRow
-          label={
-            <span>
-              Paste result text
-              <InfoDot />
-            </span>
-          }
-          control={<Switch size="sm" defaultChecked />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Hold shift to auto-send after paste
-              <InfoDot />
-            </span>
-          }
-          control={
-            <div className="flex items-center gap-2">
-              <button
-                aria-label="Auto-send options"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
-              >
-                <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <Switch size="sm" defaultChecked={false} />
-            </div>
-          }
-        />
-        <SettingsRow
-          label={
-            <span>
-              Clipboard behaviour
-              <InfoDot />
-            </span>
-          }
-          control={<PopupButton value="Default" />}
-        />
-        <SettingsRow
-          label={
-            <span>
-              Simulate keypresses
-              <InfoDot />
-            </span>
-          }
-          last
-          control={
-            <div className="flex items-center gap-2">
-              <button
-                aria-label="Keypress options"
                 className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
               >
                 <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
@@ -1969,6 +2038,7 @@ function AccountPanel() {
 
 const SETTINGS_TITLES: Record<SettingsKey, string> = {
   general: "General",
+  dictation: "Dictation",
   shortcuts: "Shortcuts",
   sound: "Sound",
   models: "Models",
@@ -2037,6 +2107,8 @@ export default function SettingsPage() {
     settingsBody =
       settingsTab === "general" ? (
         <GeneralPanel onOpenSystem={() => setSubpage({ kind: "system" })} />
+      ) : settingsTab === "dictation" ? (
+        <DictationPanel />
       ) : settingsTab === "shortcuts" ? (
         <ShortcutsPanel />
       ) : settingsTab === "sound" ? (
