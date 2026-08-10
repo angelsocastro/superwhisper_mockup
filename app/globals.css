@@ -128,6 +128,12 @@
   --scrim: rgb(0 0 0 / 20%);
   --hairline-c: rgb(0 0 0 / 13%);
   --vibrancy-c: oklch(0.97 0 0 / 66%);
+
+  /* Elevation tiers — ambient ring (hairline) is layered on separately by
+   * the .elevated-* utilities below, so these hold only the cast shadow. */
+  --shadow-surface: 0 30px 60px -15px rgb(0 0 0 / 25%), 0 10px 24px -10px rgb(0 0 0 / 15%);
+  --shadow-modal: 0 50px 100px -20px rgb(0 0 0 / 35%), 0 16px 32px -12px rgb(0 0 0 / 20%);
+  --shadow-popover: 0 20px 44px -12px rgb(0 0 0 / 28%), 0 6px 16px -6px rgb(0 0 0 / 18%);
 }
 
 .dark {
@@ -183,6 +189,17 @@
   --scrim: rgb(0 0 0 / 50%);
   --hairline-c: rgb(255 255 255 / 12%);
   --vibrancy-c: oklch(0.2 0 0 / 68%);
+
+  /* A cast shadow alone barely reads against a near-black desk, so dark
+   * elevation leans harder on the shadow's own presence and adds a 1px
+   * inset rim light along the top edge — the same cue a real light source
+   * leaves on a dark window. */
+  --shadow-surface: 0 40px 80px -20px rgb(0 0 0 / 80%), 0 14px 32px -12px rgb(0 0 0 / 70%),
+    inset 0 1px 0 0 rgb(255 255 255 / 6%);
+  --shadow-modal: 0 60px 120px -24px rgb(0 0 0 / 88%), 0 20px 44px -14px rgb(0 0 0 / 78%),
+    inset 0 1px 0 0 rgb(255 255 255 / 8%);
+  --shadow-popover: 0 26px 56px -14px rgb(0 0 0 / 75%), 0 8px 20px -8px rgb(0 0 0 / 65%),
+    inset 0 1px 0 0 rgb(255 255 255 / 8%);
 }
 
 @layer base {
@@ -222,5 +239,20 @@
 
   .hairline-l {
     box-shadow: inset 0.5px 0 0 0 var(--hairline-c);
+  }
+
+  /* Elevation: hairline ring + cast shadow in one declaration, so every
+   * floating surface at a given tier reads consistently in both themes
+   * instead of each component hand-tuning its own shadow. */
+  .elevated-surface {
+    box-shadow: 0 0 0 0.5px var(--hairline-c), var(--shadow-surface);
+  }
+
+  .elevated-modal {
+    box-shadow: 0 0 0 0.5px var(--hairline-c), var(--shadow-modal);
+  }
+
+  .elevated-popover {
+    box-shadow: 0 0 0 0.5px var(--hairline-c), var(--shadow-popover);
   }
 }

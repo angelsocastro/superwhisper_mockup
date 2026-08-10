@@ -18,7 +18,7 @@ export function DetailModal({
       onClick={onClose}
     >
       <div
-        className="hairline relative flex flex-col overflow-hidden rounded-[10px] bg-card shadow-[0_50px_100px_-20px_rgb(0_0_0/0.8)]"
+        className="elevated-modal relative flex flex-col overflow-hidden rounded-[10px] bg-card"
         style={{ width }}
         onClick={(e) => e.stopPropagation()}
       >

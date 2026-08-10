@@ -5,6 +5,7 @@ import {
   Home as HomeIcon,
   BookOpen,
   Keyboard,
+  Mic,
   Settings as SettingsIcon,
   Volume2,
   BrainCircuit,
@@ -44,7 +45,6 @@ import {
   Asterisk,
   Type,
   CircleCheck,
-  Circle,
   ChevronDown,
   Building2,
   Minus,
@@ -965,13 +965,28 @@ function DailyNav({
 /*                                 setup guide                                 */
 /* -------------------------------------------------------------------------- */
 
-type SetupTask = { id: string; label: string; done: boolean };
+type SetupTask = {
+  id: string;
+  label: string;
+  done: boolean;
+  icon: LucideIcon;
+};
 
 const SETUP_SEED: SetupTask[] = [
-  { id: "record", label: "Try your first dictation", done: true },
-  { id: "language", label: "Pick your language", done: true },
-  { id: "shortcuts", label: "Customize your shortcuts", done: false },
-  { id: "vocabulary", label: "Add a word to your vocabulary", done: false },
+  { id: "record", label: "Try your first dictation", done: true, icon: Mic },
+  { id: "language", label: "Pick your language", done: true, icon: Globe },
+  {
+    id: "shortcuts",
+    label: "Customize your shortcuts",
+    done: false,
+    icon: Keyboard,
+  },
+  {
+    id: "vocabulary",
+    label: "Add a word to your vocabulary",
+    done: false,
+    icon: BookOpen,
+  },
 ];
 
 function SetupGuide({
@@ -986,9 +1001,10 @@ function SetupGuide({
   const done = tasks.filter((t) => t.done).length;
   const pct = Math.round((done / tasks.length) * 100);
   const allDone = done === tasks.length;
+  const nextId = tasks.find((t) => !t.done)?.id;
 
   return (
-    <div className="hairline absolute right-3 bottom-11 z-30 w-[286px] overflow-hidden rounded-[10px] bg-popover shadow-[0_20px_44px_-12px_rgb(0_0_0/0.5)]">
+    <div className="elevated-popover absolute right-3 bottom-11 z-30 w-[286px] overflow-hidden rounded-[10px] bg-popover">
       <div className="flex items-center gap-1 px-3.5 pt-3">
         <span className="flex-1 text-[13px] font-semibold text-foreground">
           Setup guide
@@ -1020,35 +1036,50 @@ function SetupGuide({
               That&rsquo;s everything — you&rsquo;re set up.
             </p>
           )}
-          {tasks.map((task) => (
-            <button
-              key={task.id}
-              onClick={() => onToggle(task.id)}
-              className="flex items-center gap-2.5 px-3.5 py-1.5 text-left transition-colors hover:bg-fill"
-            >
-              {task.done ? (
-                <CircleCheck
-                  className="h-4 w-4 shrink-0 text-primary"
-                  strokeWidth={2}
-                />
-              ) : (
-                <Circle
-                  className="h-4 w-4 shrink-0 text-muted-foreground/50"
-                  strokeWidth={2}
-                />
-              )}
-              <span
-                className={cn(
-                  "text-[13px]",
-                  task.done
-                    ? "text-muted-foreground line-through"
-                    : "text-foreground",
-                )}
+          {tasks.map((task) => {
+            const isNext = task.id === nextId;
+            return (
+              <button
+                key={task.id}
+                onClick={() => onToggle(task.id)}
+                className="flex items-center gap-2.5 px-3.5 py-1.5 text-left transition-colors hover:bg-fill"
               >
-                {task.label}
-              </span>
-            </button>
-        ))}
+                <span
+                  className={cn(
+                    "relative flex h-6 w-6 shrink-0 items-center justify-center rounded-full",
+                    task.done || isNext
+                      ? "bg-primary/12 text-primary"
+                      : "bg-fill-strong text-muted-foreground/60",
+                  )}
+                >
+                  <task.icon className="h-3.5 w-3.5" strokeWidth={2} />
+                  {task.done && (
+                    <span className="absolute -right-0.5 -bottom-0.5 flex h-3 w-3 items-center justify-center rounded-full bg-primary ring-2 ring-popover">
+                      <Check
+                        className="h-[7px] w-[7px] text-primary-foreground"
+                        strokeWidth={3.5}
+                      />
+                    </span>
+                  )}
+                </span>
+                <span
+                  className={cn(
+                    "flex-1 text-[13px]",
+                    task.done
+                      ? "text-muted-foreground line-through"
+                      : "text-foreground",
+                  )}
+                >
+                  {task.label}
+                </span>
+                {isNext && (
+                  <span className="shrink-0 text-[10px] font-semibold tracking-wide text-primary/80 uppercase">
+                    Next
+                  </span>
+                )}
+              </button>
+            );
+          })}
       </div>
     </div>
   );
@@ -1270,7 +1301,40 @@ function HistoryRow({ item }: { item: HistoryItem }) {
   );
 }
 
-function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
+/**
+ * The one thing Home leads with — what to do right now, not how you've done
+ * so far. Stats and history are worth having, but they're a look backward;
+ * this is the look forward, so it comes first.
+ */
+function DictationHero({
+  modeName,
+  micName,
+}: {
+  modeName: string;
+  micName: string;
+}) {
+  return (
+    <div className="flex items-center gap-3">
+      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/12">
+        <Mic className="h-[15px] w-[15px] text-primary" strokeWidth={2} />
+      </div>
+      <p className="min-w-0 text-[15px] leading-snug text-foreground">
+        Hold <Kbd>Fn</Kbd> anywhere to dictate — right now that&rsquo;s{" "}
+        <span className="font-semibold">{modeName}</span>, via {micName}.
+      </p>
+    </div>
+  );
+}
+
+function HomePanel({
+  onOpenModels,
+  activeModeName,
+  activeMicName,
+}: {
+  onOpenModels: () => void;
+  activeModeName: string;
+  activeMicName: string;
+}) {
   const [query, setQuery] = useState("");
 
   const groups = HISTORY_GROUPS.map((g) => ({
@@ -1282,6 +1346,8 @@ function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
 
   return (
     <div className="flex flex-col gap-10">
+      <DictationHero modeName={activeModeName} micName={activeMicName} />
+
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
           <PopupButton value="All time" />
@@ -1536,7 +1602,11 @@ function VocabularyPanel() {
 
 const DAILY_PANELS: Record<
   DailyKey,
-  (props: { onOpenModels: () => void }) => React.ReactNode
+  (props: {
+    onOpenModels: () => void;
+    activeModeName: string;
+    activeMicName: string;
+  }) => React.ReactNode
 > = {
   home: HomePanel,
   vocabulary: VocabularyPanel,
@@ -2194,7 +2264,7 @@ function ModePopover({
   return (
     <>
       <div className="absolute inset-0 z-50 bg-black/25" onClick={onClose} />
-      <div className="hairline absolute right-3 bottom-10 z-50 w-[276px] overflow-hidden rounded-[10px] bg-popover/85 py-1 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.7)] backdrop-blur-xl backdrop-saturate-150">
+      <div className="elevated-popover absolute right-3 bottom-10 z-50 w-[276px] overflow-hidden rounded-[10px] bg-popover/85 py-1 backdrop-blur-xl backdrop-saturate-150">
         {row(
           "Auto",
           override === null,
@@ -2256,7 +2326,7 @@ function MicPopover({
   return (
     <>
       <div className="absolute inset-0 z-50 bg-black/25" onClick={onClose} />
-      <div className="hairline absolute right-3 bottom-10 z-50 w-[248px] overflow-hidden rounded-[10px] bg-popover/85 py-1 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.7)] backdrop-blur-xl backdrop-saturate-150">
+      <div className="elevated-popover absolute right-3 bottom-10 z-50 w-[248px] overflow-hidden rounded-[10px] bg-popover/85 py-1 backdrop-blur-xl backdrop-saturate-150">
         {mics.map((mic) => (
           <button
             key={mic.id}
@@ -3804,7 +3874,11 @@ export default function SettingsPage() {
                 title strip — the sidebar absorbs the traffic lights instead. */}
             <div className="hairline min-h-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-14 py-12">
               <div className="mx-auto flex max-w-[560px] flex-col gap-8">
-                <DailyPanel onOpenModels={() => openSettingsAt("models")} />
+                <DailyPanel
+                  onOpenModels={() => openSettingsAt("models")}
+                  activeModeName={activeMode?.name ?? "Super"}
+                  activeMicName={activeMic?.name ?? "No microphone"}
+                />
               </div>
             </div>
 

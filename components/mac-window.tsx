@@ -26,7 +26,7 @@ export function MacWindow({
 }) {
   return (
     <div
-      className="hairline relative flex flex-col overflow-hidden rounded-[10px] bg-chrome shadow-[0_30px_60px_-15px_rgb(0_0_0/0.6)]"
+      className="elevated-surface relative flex flex-col overflow-hidden rounded-[10px] bg-chrome"
       style={{ width, height }}
     >
       {children}

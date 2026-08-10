@@ -41,7 +41,7 @@ export function SettingsWindow({
       onClick={onClose}
     >
       <div
-        className="hairline relative flex w-[760px] overflow-hidden rounded-[10px] bg-card shadow-[0_50px_100px_-20px_rgb(0_0_0/0.8)]"
+        className="elevated-modal relative flex w-[760px] overflow-hidden rounded-[10px] bg-card"
         onClick={(e) => e.stopPropagation()}
       >
         {/* No title bar: the sidebar already says where you are, so close sits
