@@ -406,7 +406,7 @@ function DailyNav({
   return (
     <aside
       className={cn(
-        "flex shrink-0 flex-col pb-4 transition-[width] duration-200 ease-out",
+        "flex shrink-0 flex-col pb-1 transition-[width] duration-200 ease-out",
         collapsed ? "w-[68px] items-center px-2" : "w-[230px] px-2"
       )}
     >
@@ -2334,7 +2334,7 @@ export default function SettingsPage() {
       )}
     >
       <MacWindow width="1020px" height="700px">
-        <div className="flex min-h-0 flex-1 gap-2 px-2 pt-2">
+        <div className="flex min-h-0 flex-1 gap-2 p-2">
           <DailyNav
             active={active}
             onSelect={setActive}
@@ -2345,18 +2345,19 @@ export default function SettingsPage() {
             collapsed={!sidebarOpen}
             onToggleCollapsed={() => setSidebarOpen((v) => !v)}
           />
-          {/* Workbench pane: bordered on all sides and floating in the chrome.
-              It starts at the top of the window rather than below a title
-              strip — the sidebar absorbs the traffic lights instead. */}
-          <div className="hairline min-w-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-14 py-12">
-            <div className="mx-auto flex max-w-[560px] flex-col gap-8">
-              <DailyPanel onOpenModels={() => openSettingsAt("models")} />
+          <div className="flex min-w-0 flex-1 flex-col gap-1">
+            {/* Workbench pane: bordered on all sides and floating in the
+                chrome. It starts at the top of the window rather than below a
+                title strip — the sidebar absorbs the traffic lights instead. */}
+            <div className="hairline min-h-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-14 py-12">
+              <div className="mx-auto flex max-w-[560px] flex-col gap-8">
+                <DailyPanel onOpenModels={() => openSettingsAt("models")} />
+              </div>
             </div>
-          </div>
-        </div>
 
-        {/* Status bar sits in the chrome gutter, outside the pane. */}
-        <div className="flex h-10 shrink-0 items-center justify-end gap-1 px-3">
+            {/* Status bar sits in the chrome gutter, outside the pane, so the
+                sidebar can run the full height of the window. */}
+            <div className="flex h-8 shrink-0 items-center justify-end gap-1 px-1">
           {!setupOpen && !allSetupDone && (
             <button
               onClick={() => {
@@ -2372,10 +2373,12 @@ export default function SettingsPage() {
               </span>
             </button>
           )}
-          <button className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground">
-            MacBook Air Microphone
-            <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
-          </button>
+              <button className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground">
+                MacBook Air Microphone
+                <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
+              </button>
+            </div>
+          </div>
         </div>
 
         {setupOpen && (
