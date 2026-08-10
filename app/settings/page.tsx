@@ -561,7 +561,19 @@ type Subpage =
   | { kind: "system" }
   | { kind: "plans" }
   | { kind: "modeDetail"; modeId: string }
+  | { kind: "superDetail" }
   | null;
+
+/** Where each overridable setting actually lives, so Super's summary can
+ *  link out to the real editable field instead of duplicating it. */
+const TAB_BY_GROUP: Record<string, SettingsKey> = {
+  Language: "dictation",
+  Formatting: "dictation",
+  Output: "dictation",
+  Capture: "dictation",
+  Privacy: "privacy",
+  Models: "models",
+};
 
 const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
   { key: "home", label: "Home", icon: HomeIcon },
@@ -2722,16 +2734,67 @@ function SamplePreview({
   );
 }
 
+/**
+ * Super's page in the same shape as a mode's — one place to see everything
+ * it does — but read-only here on purpose. Editing stays in Dictation /
+ * Privacy / Models, the one place each setting is actually stored, so this
+ * never becomes a second source of truth for the same field.
+ */
+function SuperDetailPanel({
+  base,
+  onJumpTo,
+}: {
+  base: BaseSettings;
+  onJumpTo: (tab: SettingsKey) => void;
+}) {
+  const groups = [...new Set(SETTING_DEFS.map((d) => d.group))];
+
+  return (
+    <div className="flex flex-col gap-8">
+      <p className="text-[12px] leading-relaxed text-muted-foreground">
+        This is what everyone gets unless a mode overrides it. Click any row
+        to edit it where it actually lives.
+      </p>
+
+      {groups.map((group) => (
+        <SettingsSection key={group} title={group}>
+          {SETTING_DEFS.filter((d) => d.group === group).map((def, i, arr) => (
+            <SettingsRow
+              key={def.key}
+              label={def.label}
+              onClick={() => onJumpTo(TAB_BY_GROUP[group])}
+              last={i === arr.length - 1}
+              control={
+                <div className="flex items-center gap-2">
+                  <span className="text-[12px] text-muted-foreground">
+                    {formatSettingValue(base[def.key])}
+                  </span>
+                  <ChevronRight
+                    className="h-4 w-4 text-muted-foreground"
+                    strokeWidth={2}
+                  />
+                </div>
+              }
+            />
+          ))}
+        </SettingsSection>
+      ))}
+    </div>
+  );
+}
+
 function ModesPanel({
   modes,
   base,
   onOpenMode,
+  onOpenSuper,
   onToggleMode,
   onRename,
 }: {
   modes: ModeItem[];
   base: BaseSettings;
   onOpenMode: (id: string) => void;
+  onOpenSuper: () => void;
   onToggleMode: (id: string, enabled: boolean) => void;
   onRename: (id: string, name: string) => void;
 }) {
@@ -2746,6 +2809,32 @@ function ModesPanel({
       </p>
 
       <section className="flex flex-col gap-4">
+        {/* Pinned, not a toggle: this is the thing modes are diffs against,
+            not one more thing that can be switched off. */}
+        <div
+          onClick={onOpenSuper}
+          className="hairline flex cursor-pointer items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-colors hover:bg-fill"
+        >
+          <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] bg-primary/15 text-primary">
+            <Sparkles className="h-3 w-3" strokeWidth={2.5} />
+          </span>
+          <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+            <span className="text-[13px] font-medium text-foreground">
+              Super
+            </span>
+            <span className="truncate text-[12px] text-muted-foreground">
+              The base — everyone gets this unless a mode below overrides it
+            </span>
+          </div>
+          <span className="shrink-0 rounded-[4px] bg-fill-strong px-1.5 py-px text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+            Base
+          </span>
+          <ChevronRight
+            className="h-4 w-4 shrink-0 text-muted-foreground"
+            strokeWidth={2}
+          />
+        </div>
+
         <div className="flex items-center justify-between">
           <h2 className="text-[15px] font-semibold text-foreground">Modes</h2>
           <GhostButton>+ Create mode</GhostButton>
@@ -3589,6 +3678,17 @@ export default function SettingsPage() {
   } else if (subpage?.kind === "plans") {
     settingsBody = <PlansPanel />;
     onBack = () => setSubpage(null);
+  } else if (subpage?.kind === "superDetail") {
+    settingsBody = (
+      <SuperDetailPanel
+        base={base}
+        onJumpTo={(tab) => {
+          setSubpage(null);
+          setSettingsTab(tab);
+        }}
+      />
+    );
+    onBack = () => setSubpage(null);
   } else if (detailMode) {
     settingsBody = (
       <ModeDetailPanel
@@ -3629,6 +3729,7 @@ export default function SettingsPage() {
           modes={modes}
           base={base}
           onOpenMode={(id) => setSubpage({ kind: "modeDetail", modeId: id })}
+          onOpenSuper={() => setSubpage({ kind: "superDetail" })}
           onToggleMode={toggleMode}
           onRename={renameMode}
         />
