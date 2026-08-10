@@ -8,7 +8,6 @@ import {
   Settings as SettingsIcon,
   Volume2,
   BrainCircuit,
-  Wrench,
   History as HistoryIcon,
   Cloud,
   Sparkles,
@@ -29,7 +28,6 @@ import {
   RotateCcw,
   Plus,
   Trash2,
-  QrCode,
   Pencil,
   Info,
   Upload,
@@ -44,6 +42,8 @@ import {
   Circle,
   ChevronDown,
   CircleUser,
+  CreditCard,
+  ExternalLink,
   type LucideIcon,
 } from "lucide-react";
 import { MacWindow, TrafficLights } from "@/components/mac-window";
@@ -212,15 +212,15 @@ function useResolvedTheme(pref: ThemePref) {
 type DailyKey = "home" | "vocabulary";
 type SettingsKey =
   | "account"
+  | "billing"
   | "general"
   | "dictation"
   | "shortcuts"
   | "sound"
   | "models"
-  | "advanced";
+  | "modes";
 type Subpage =
   | { kind: "system" }
-  | { kind: "modesList" }
   | { kind: "modeDetail"; modeId: string }
   | null;
 
@@ -231,12 +231,13 @@ const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
 
 const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
   { key: "account", label: "Account", icon: CircleUser, group: 0 },
+  { key: "billing", label: "Billing", icon: CreditCard, group: 0 },
   { key: "general", label: "General", icon: SettingsIcon, group: 1 },
   { key: "dictation", label: "Dictation", icon: Type, group: 1 },
   { key: "shortcuts", label: "Shortcuts", icon: Keyboard, group: 1 },
   { key: "sound", label: "Sound", icon: Volume2, group: 1 },
   { key: "models", label: "Models", icon: BrainCircuit, group: 2 },
-  { key: "advanced", label: "Advanced", icon: Wrench, group: 2 },
+  { key: "modes", label: "Modes", icon: Sparkles, group: 2 },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -1383,49 +1384,41 @@ function ShortcutRow({
   );
 }
 
+/** One flat list: the rows are homogeneous, so headings over them would only
+ *  add chrome — two of the old groups held a single shortcut each. */
 function ShortcutsPanel() {
   return (
-    <div className="flex flex-col gap-8">
-      <SettingsSection
-        title="Recording"
-        description="Global shortcuts that work anywhere on your Mac."
-      >
-        <ShortcutRow
-          label="Toggle Recording"
-          description="Starts and stops recordings"
-          combo="⌥ Space"
-        />
-        <ShortcutRow
-          label="Cancel Recording"
-          description="Discards the active recording"
-          combo="esc"
-        />
-        <ShortcutRow
-          label="Push to talk"
-          description="Hold to record, release when done"
-          combo="Fn"
-          clearable
-          last
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Pointer">
-        <ShortcutRow
-          label="Mouse shortcut"
-          description="Tap to toggle, or hold and release when done"
-          last
-        />
-      </SettingsSection>
-
-      <SettingsSection title="Modes">
-        <ShortcutRow
-          label="Change mode"
-          description="Activates the mode switcher"
-          combo="⌥ ⇧ K"
-          last
-        />
-      </SettingsSection>
-    </div>
+    <SettingsSection
+      title="Shortcuts"
+      description="Global shortcuts that work anywhere on your Mac."
+    >
+      <ShortcutRow
+        label="Toggle Recording"
+        description="Starts and stops recordings"
+        combo="⌥ Space"
+      />
+      <ShortcutRow
+        label="Cancel Recording"
+        description="Discards the active recording"
+        combo="esc"
+      />
+      <ShortcutRow
+        label="Push to talk"
+        description="Hold to record, release when done"
+        combo="Fn"
+        clearable
+      />
+      <ShortcutRow
+        label="Mouse shortcut"
+        description="Tap to toggle, or hold and release when done"
+      />
+      <ShortcutRow
+        label="Change mode"
+        description="Activates the mode switcher"
+        combo="⌥ ⇧ K"
+        last
+      />
+    </SettingsSection>
   );
 }
 
@@ -1728,15 +1721,23 @@ function ModelsPanel() {
 /*                             settings: Advanced                              */
 /* -------------------------------------------------------------------------- */
 
-function AdvancedPanel({
+/** The Modes list lives inline here rather than behind a nav row: the pane
+ *  held a single toggle otherwise, and Modes sat three levels deep. */
+function ModesPanel({
   modesEnabled,
   setModesEnabled,
-  onOpenModes,
+  modes,
+  onOpenMode,
+  onRename,
 }: {
   modesEnabled: boolean;
   setModesEnabled: (v: boolean) => void;
-  onOpenModes: () => void;
+  modes: ModeItem[];
+  onOpenMode: (id: string) => void;
+  onRename: (id: string, name: string) => void;
 }) {
+  const [tipDismissed, setTipDismissed] = useState(false);
+
   return (
     <div className="flex flex-col gap-8">
       <SettingsSection
@@ -1750,7 +1751,7 @@ function AdvancedPanel({
               ? "Modes are available as a manual override."
               : "Off — Super is used for everything, including offline."
           }
-          last={!modesEnabled}
+          last
           control={
             <Switch
               size="sm"
@@ -1759,10 +1760,82 @@ function AdvancedPanel({
             />
           }
         />
-        {modesEnabled && (
-          <NavRow label="Manage Modes" onClick={onOpenModes} />
-        )}
       </SettingsSection>
+
+      {modesEnabled && (
+        <div className="flex flex-col gap-4">
+          <div className="flex items-center justify-between">
+            <h2 className="text-[15px] font-semibold text-foreground">
+              Your modes
+            </h2>
+            <GhostButton>+ Create mode</GhostButton>
+          </div>
+
+          <div className="flex flex-col gap-2">
+            {modes.map((mode) => (
+              <div
+                key={mode.id}
+                className="hairline flex items-center gap-2.5 rounded-[9px] bg-card px-3.5 py-3"
+              >
+                <Sparkles
+                  className="h-4 w-4 shrink-0 text-muted-foreground"
+                  strokeWidth={2}
+                />
+                <span className="text-[13px] font-medium text-foreground">
+                  <InlineEdit
+                    value={mode.name}
+                    onChange={(name) => onRename(mode.id, name)}
+                  />
+                </span>
+                {mode.active && (
+                  <span
+                    className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#28c840]"
+                    title="Active mode"
+                  />
+                )}
+                <div className="ml-auto flex shrink-0 items-center gap-1.5">
+                  <span className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#d4a27f] text-[9px] font-bold text-[#2b1a10]">
+                    A
+                  </span>
+                  <span className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-white text-[9px] font-bold text-black">
+                    S
+                  </span>
+                  <button
+                    onClick={() => onOpenMode(mode.id)}
+                    aria-label={`Open ${mode.name}`}
+                    className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+                  >
+                    <ChevronRight className="h-4 w-4" strokeWidth={2} />
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          {!tipDismissed && (
+            <div className="hairline flex items-start gap-3 rounded-[10px] bg-card px-4 py-3.5">
+              <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#febc2e]/15 text-[#febc2e]">
+                <Lightbulb className="h-4 w-4" strokeWidth={2} />
+              </span>
+              <div className="flex flex-1 flex-col gap-1">
+                <span className="text-[13px] font-medium text-foreground">
+                  Auto-switch with activation
+                </span>
+                <span className="text-[12px] leading-relaxed text-muted-foreground">
+                  Link a mode to specific apps or websites so Superwhisper picks
+                  the right one automatically when you record.
+                </span>
+              </div>
+              <button
+                onClick={() => setTipDismissed(true)}
+                className="shrink-0 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+              >
+                Dismiss
+              </button>
+            </div>
+          )}
+        </div>
+      )}
     </div>
   );
 }
@@ -1774,7 +1847,10 @@ function AdvancedPanel({
 function SystemPanel() {
   return (
     <div className="flex flex-col gap-8">
-      <SettingsSection title="Application">
+      <SettingsSection
+        title="Application"
+        description="How Superwhisper behaves as a Mac app."
+      >
         <SettingsRow
           label={
             <span>
@@ -1800,12 +1876,8 @@ function SystemPanel() {
               <InfoDot />
             </span>
           }
-          last
           control={<Switch size="sm" defaultChecked={false} />}
         />
-      </SettingsSection>
-
-      <SettingsSection title="Voice model">
         <SettingsRow
           label={
             <span>
@@ -1813,12 +1885,16 @@ function SystemPanel() {
               <InfoDot />
             </span>
           }
+          description="How long a downloaded model stays warm in memory."
           last
           control={<PopupButton value="1 minute" />}
         />
       </SettingsSection>
 
-      <SettingsSection title="App folder location">
+      <SettingsSection
+        title="Files"
+        description="Where recordings and transcripts are kept."
+      >
         <SettingsRow
           label={
             <span className="font-mono text-[12px] text-muted-foreground">
@@ -1835,21 +1911,14 @@ function SystemPanel() {
             </span>
           }
           last
-          control={
-            <div className="flex items-center gap-2">
-              <button
-                aria-label="Filesync options"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
-              >
-                <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <Switch size="sm" defaultChecked={false} />
-            </div>
-          }
+          control={<GearSwitch />}
         />
       </SettingsSection>
 
-      <SettingsSection title="Agent Plugins">
+      <SettingsSection
+        title="Integrations"
+        description="Plugins and experimental features."
+      >
         <SettingsRow
           icon={
             <span className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#d97757] text-white">
@@ -1857,14 +1926,10 @@ function SystemPanel() {
             </span>
           }
           label="Claude Code"
-          last
           control={
             <span className="text-[12px] text-muted-foreground">Installed</span>
           }
         />
-      </SettingsSection>
-
-      <SettingsSection title="AI Models">
         <SettingsRow
           label={
             <span>
@@ -1873,17 +1938,7 @@ function SystemPanel() {
             </span>
           }
           last
-          control={
-            <div className="flex items-center gap-2">
-              <button
-                aria-label="Experimental model options"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
-              >
-                <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
-              </button>
-              <Switch size="sm" defaultChecked />
-            </div>
-          }
+          control={<GearSwitch defaultChecked />}
         />
       </SettingsSection>
     </div>
@@ -1893,94 +1948,6 @@ function SystemPanel() {
 /* -------------------------------------------------------------------------- */
 /*                          sub-pages: Modes list/detail                       */
 /* -------------------------------------------------------------------------- */
-
-function ModesListPanel({
-  modes,
-  onOpenMode,
-  onRename,
-}: {
-  modes: ModeItem[];
-  onOpenMode: (id: string) => void;
-  onRename: (id: string, name: string) => void;
-}) {
-  const [tipDismissed, setTipDismissed] = useState(false);
-
-  return (
-    <div className="flex flex-col gap-4">
-      <div className="flex items-center justify-between">
-        <h2 className="flex items-center text-[15px] font-semibold text-foreground">
-          Modes
-          <InfoDot />
-        </h2>
-        <GhostButton>+ Create mode</GhostButton>
-      </div>
-
-      <div className="flex flex-col gap-2">
-        {modes.map((mode) => (
-          <div
-            key={mode.id}
-            className="hairline flex items-center gap-2.5 rounded-[9px] bg-card px-3.5 py-3"
-          >
-            <Sparkles
-              className="h-4 w-4 shrink-0 text-muted-foreground"
-              strokeWidth={2}
-            />
-            <span className="text-[13px] font-medium text-foreground">
-              <InlineEdit
-                value={mode.name}
-                onChange={(name) => onRename(mode.id, name)}
-              />
-            </span>
-            {mode.active && (
-              <span
-                className="h-1.5 w-1.5 shrink-0 rounded-full bg-[#28c840]"
-                title="Active mode"
-              />
-            )}
-            <div className="ml-auto flex shrink-0 items-center gap-1.5">
-              <span className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-[#d4a27f] text-[9px] font-bold text-[#2b1a10]">
-                A
-              </span>
-              <span className="flex h-5 w-5 items-center justify-center rounded-[5px] bg-white text-[9px] font-bold text-black">
-                S
-              </span>
-              <button
-                onClick={() => onOpenMode(mode.id)}
-                aria-label={`Open ${mode.name}`}
-                className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-              >
-                <ChevronRight className="h-4 w-4" strokeWidth={2} />
-              </button>
-            </div>
-          </div>
-        ))}
-      </div>
-
-      {!tipDismissed && (
-        <div className="hairline mt-2 flex items-start gap-3 rounded-[10px] bg-card px-4 py-3.5">
-          <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-[8px] bg-[#febc2e]/15 text-[#febc2e]">
-            <Lightbulb className="h-4 w-4" strokeWidth={2} />
-          </span>
-          <div className="flex flex-1 flex-col gap-1">
-            <span className="text-[13px] font-medium text-foreground">
-              Auto-switch with activation
-            </span>
-            <span className="text-[12px] leading-relaxed text-muted-foreground">
-              Link a mode to specific apps or websites so Superwhisper picks the
-              right one automatically when you record.
-            </span>
-          </div>
-          <button
-            onClick={() => setTipDismissed(true)}
-            className="shrink-0 text-[12px] font-medium text-muted-foreground hover:text-foreground"
-          >
-            Dismiss
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
 
 function ModeDetailPanel({ mode }: { mode: ModeItem }) {
   const [showAdvanced, setShowAdvanced] = useState(false);
@@ -2177,49 +2144,101 @@ function AccountPanel() {
         </div>
       </div>
 
-      <SettingsSection title="License">
-        <SettingsRow
-          label="License key"
-          description="•••••••• — •••• — •••• — •••• — ••••••••5904"
-          control={
-            <button
-              aria-label="Show QR code"
-              title="Show QR code"
-              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-            >
-              <QrCode className="h-[18px] w-[18px]" strokeWidth={1.75} />
-            </button>
-          }
-        />
-        <SettingsRow
-          label="Billing"
-          description="Manage your plan, invoices and payment method."
-          control={<GhostButton>Manage billing</GhostButton>}
-        />
+      <SettingsSection title="Devices">
         <SettingsRow
           label="This device"
-          description="Frees the seat so you can activate another Mac."
+          description="MacBook Pro — signed in since Feb 12, 2026."
+          control={<GhostButton>Sign out</GhostButton>}
+        />
+        <SettingsRow
+          label="Other devices"
+          description="3 of 5 devices signed into this account."
           last
-          control={<GhostButton>Unlink device</GhostButton>}
+          control={<GhostButton>Manage devices</GhostButton>}
         />
       </SettingsSection>
 
-      <SettingsSection title="Community & support">
-        {links.map((l, i) => (
-          <SettingsRow
-            key={l.label}
-            icon={<l.icon className="h-4 w-4" strokeWidth={2} />}
-            label={l.label}
-            last={i === links.length - 1}
-            control={
-              <ChevronRight
-                className="h-4 w-4 text-muted-foreground"
+      <section className="flex flex-col gap-3">
+        <h2 className="text-[15px] font-semibold text-foreground">
+          Community & support
+        </h2>
+        <div className="flex flex-wrap gap-1.5">
+          {links.map((l) => (
+            <button
+              key={l.label}
+              className="hairline flex items-center gap-1.5 rounded-full bg-fill-hover px-2.5 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
+            >
+              <l.icon
+                className="h-3.5 w-3.5 text-muted-foreground"
                 strokeWidth={2}
               />
-            }
-            onClick={() => {}}
-          />
-        ))}
+              {l.label}
+            </button>
+          ))}
+        </div>
+      </section>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                  Billing                                    */
+/* -------------------------------------------------------------------------- */
+
+function BillingPanel() {
+  return (
+    <div className="flex flex-col gap-8">
+      <div className="hairline flex items-center gap-4 rounded-[10px] bg-card px-4 py-3.5">
+        <div className="flex min-w-0 flex-1 flex-col gap-1">
+          <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+            Pro
+            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+              Active
+            </span>
+          </span>
+          <span className="text-[12px] leading-snug text-muted-foreground">
+            $8.49/month · renews Sep 4, 2026
+          </span>
+        </div>
+        <GhostButton>Change plan</GhostButton>
+      </div>
+
+      <SettingsSection
+        title="Payment"
+        description="Invoices, payment method and tax details open in your browser."
+      >
+        <SettingsRow
+          label="Payment method"
+          description="Visa •••• 5904 — expires 08/28"
+          control={<GhostButton>Update</GhostButton>}
+        />
+        <SettingsRow
+          label="Billing email"
+          description="angel@caudalflow.com"
+          control={<GhostButton>Change</GhostButton>}
+        />
+        <SettingsRow
+          label="Invoices"
+          description="Download past receipts and tax details."
+          last
+          control={
+            <GhostButton>
+              <span className="flex items-center gap-1.5">
+                Open portal
+                <ExternalLink className="h-3 w-3" strokeWidth={2} />
+              </span>
+            </GhostButton>
+          }
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Subscription">
+        <SettingsRow
+          label="Cancel subscription"
+          description="Pro stays active until Sep 4, 2026."
+          last
+          control={<GhostButton>Cancel</GhostButton>}
+        />
       </SettingsSection>
     </div>
   );
@@ -2287,22 +2306,15 @@ export default function SettingsPage() {
   if (subpage?.kind === "system") {
     settingsBody = <SystemPanel />;
     onBack = () => setSubpage(null);
-  } else if (subpage?.kind === "modesList") {
-    settingsBody = (
-      <ModesListPanel
-        modes={modes}
-        onOpenMode={(id) => setSubpage({ kind: "modeDetail", modeId: id })}
-        onRename={renameMode}
-      />
-    );
-    onBack = () => setSubpage(null);
   } else if (detailMode) {
     settingsBody = <ModeDetailPanel mode={detailMode} />;
-    onBack = () => setSubpage({ kind: "modesList" });
+    onBack = () => setSubpage(null);
   } else {
     settingsBody =
       settingsTab === "account" ? (
         <AccountPanel />
+      ) : settingsTab === "billing" ? (
+        <BillingPanel />
       ) : settingsTab === "general" ? (
         <GeneralPanel
           onOpenSystem={() => setSubpage({ kind: "system" })}
@@ -2318,10 +2330,12 @@ export default function SettingsPage() {
       ) : settingsTab === "models" ? (
         <ModelsPanel />
       ) : (
-        <AdvancedPanel
+        <ModesPanel
           modesEnabled={modesEnabled}
           setModesEnabled={setModesEnabled}
-          onOpenModes={() => setSubpage({ kind: "modesList" })}
+          modes={modes}
+          onOpenMode={(id) => setSubpage({ kind: "modeDetail", modeId: id })}
+          onRename={renameMode}
         />
       );
   }
