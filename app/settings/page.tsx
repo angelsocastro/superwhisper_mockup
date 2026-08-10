@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   Home as HomeIcon,
   BookOpen,
@@ -181,6 +181,29 @@ const HISTORY_GROUPS: { label: string; items: string[] }[] = [
   },
 ];
 
+type ThemePref = "auto" | "light" | "dark";
+
+/**
+ * Resolves the Theme preference to an actual appearance. "auto" tracks the
+ * OS setting live, the way a real Mac app would. Starts as null so the first
+ * paint matches the server and hydration stays clean.
+ */
+function useResolvedTheme(pref: ThemePref) {
+  const [systemDark, setSystemDark] = useState<boolean | null>(null);
+
+  useEffect(() => {
+    const mq = window.matchMedia("(prefers-color-scheme: dark)");
+    setSystemDark(mq.matches);
+    const onChange = (e: MediaQueryListEvent) => setSystemDark(e.matches);
+    mq.addEventListener("change", onChange);
+    return () => mq.removeEventListener("change", onChange);
+  }, []);
+
+  if (pref === "light") return "light";
+  if (pref === "dark") return "dark";
+  return systemDark ? "dark" : "light";
+}
+
 type DailyKey = "home" | "vocabulary";
 type SettingsKey =
   | "general"
@@ -238,7 +261,7 @@ function InfoDot() {
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="hairline rounded-[5px] bg-white/[0.06] px-2 py-1 text-[11px] font-medium">
+    <kbd className="hairline rounded-[5px] bg-fill-hover px-2 py-1 text-[11px] font-medium">
       {children}
     </kbd>
   );
@@ -254,7 +277,7 @@ function GhostButton({
   return (
     <button
       onClick={onClick}
-      className="hairline rounded-[6px] bg-white/[0.07] px-2.5 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-white/[0.11]"
+      className="hairline rounded-[6px] bg-fill-hover px-2.5 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
     >
       {children}
     </button>
@@ -318,9 +341,9 @@ function WhatsNewStack({
             aria-hidden={i !== 0}
             tabIndex={i === 0 ? 0 : -1}
             className={cn(
-              "hairline absolute flex flex-col gap-0.5 rounded-[8px] bg-[oklch(0.25_0_0)] px-2.5 py-2 text-left shadow-[0_8px_18px_-6px_rgb(0_0_0/0.55)] transition-all duration-300 ease-out",
+              "hairline absolute flex flex-col gap-0.5 rounded-[8px] bg-raised px-2.5 py-2 text-left shadow-[0_8px_18px_-6px_rgb(0_0_0/0.55)] transition-all duration-300 ease-out",
               i === 0
-                ? "cursor-pointer hover:bg-[oklch(0.28_0_0)]"
+                ? "cursor-pointer hover:bg-raised-hover"
                 : "pointer-events-none"
             )}
             style={{
@@ -370,8 +393,8 @@ function DailyNav({
             className={cn(
               "flex items-center gap-2.5 rounded-[7px] px-2 py-1.5 text-left text-[13px] font-medium transition-colors",
               active === item.key
-                ? "bg-white/[0.11] text-foreground"
-                : "text-foreground/80 hover:bg-white/[0.06]"
+                ? "bg-fill-strong text-foreground"
+                : "text-foreground/80 hover:bg-fill-hover"
             )}
           >
             <AppIcon icon={item.icon} tone={item.tone} size={22} />
@@ -383,12 +406,12 @@ function DailyNav({
       <div className="mt-auto flex flex-col gap-4">
         <WhatsNewStack items={whatsNew} onOpen={onOpenWhatsNew} />
 
-        <div className="flex items-center gap-2 border-t border-white/[0.06] pt-4">
+        <div className="flex items-center gap-2 border-t border-line pt-4">
           <button
             onClick={onOpenAccount}
-            className="flex min-w-0 flex-1 items-center gap-2 rounded-[6px] px-1 py-1 text-left transition-colors hover:bg-white/[0.06]"
+            className="flex min-w-0 flex-1 items-center gap-2 rounded-[6px] px-1 py-1 text-left transition-colors hover:bg-fill-hover"
           >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-white/[0.08] text-[11px] font-semibold">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[11px] font-semibold">
               A
             </div>
             <span className="truncate text-[12px] font-medium text-foreground/80">
@@ -398,7 +421,7 @@ function DailyNav({
           <button
             onClick={onOpenSettings}
             aria-label="Open Settings"
-            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <SettingsIcon className="h-[15px] w-[15px]" strokeWidth={2} />
           </button>
@@ -499,7 +522,7 @@ function HomePanel({
           <PopupButton value="All time" />
           <button
             aria-label="Export stats"
-            className="flex h-6 w-6 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            className="flex h-6 w-6 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <Share className="h-[15px] w-[15px]" strokeWidth={2} />
           </button>
@@ -556,7 +579,7 @@ function HomePanel({
             />
             History
           </h2>
-          <div className="hairline flex min-w-0 flex-1 items-center gap-2 rounded-[7px] bg-white/[0.05] px-2.5 py-1.5">
+          <div className="hairline flex min-w-0 flex-1 items-center gap-2 rounded-[7px] bg-fill px-2.5 py-1.5">
             <Search
               className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
               strokeWidth={2}
@@ -665,14 +688,14 @@ function VocabularyPanel() {
           <button
             aria-label="Import list"
             title="Import list"
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <Upload className="h-[15px] w-[15px]" strokeWidth={2} />
           </button>
           <button
             aria-label="Export list"
             title="Export list"
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <Share className="h-[15px] w-[15px]" strokeWidth={2} />
           </button>
@@ -917,8 +940,15 @@ function RecordingWindowSwatch({
 /*                              settings: General                              */
 /* -------------------------------------------------------------------------- */
 
-function GeneralPanel({ onOpenSystem }: { onOpenSystem: () => void }) {
-  const [theme, setTheme] = useState<"auto" | "light" | "dark">("auto");
+function GeneralPanel({
+  onOpenSystem,
+  theme,
+  setTheme,
+}: {
+  onOpenSystem: () => void;
+  theme: ThemePref;
+  setTheme: (t: ThemePref) => void;
+}) {
   const [recordingWindow, setRecordingWindow] = useState<
     "classic" | "mini" | "none"
   >("mini");
@@ -941,7 +971,7 @@ function GeneralPanel({ onOpenSystem }: { onOpenSystem: () => void }) {
             ))}
           </div>
         </div>
-        <Separator className="ml-4 bg-white/[0.06]" />
+        <Separator className="ml-4 bg-line" />
         <div className="flex items-start gap-4 px-4 py-3.5">
           <span className="w-[104px] shrink-0 pt-3 text-[13px] font-medium text-foreground">
             Recording window
@@ -957,7 +987,7 @@ function GeneralPanel({ onOpenSystem }: { onOpenSystem: () => void }) {
             ))}
           </div>
         </div>
-        <Separator className="ml-4 bg-white/[0.06]" />
+        <Separator className="ml-4 bg-line" />
         <SettingsRow
           label={
             <span>
@@ -1039,7 +1069,7 @@ function GearSwitch({ defaultChecked = false }: { defaultChecked?: boolean }) {
     <div className="flex items-center gap-2">
       <button
         aria-label="Options"
-        className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+        className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
       >
         <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
       </button>
@@ -1199,7 +1229,7 @@ function ShortcutRow({
           <button
             aria-label={`Reset ${label}`}
             title="Reset to default"
-            className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <RotateCcw className="h-3 w-3" strokeWidth={2} />
           </button>
@@ -1208,7 +1238,7 @@ function ShortcutRow({
               {clearable && (
                 <button
                   aria-label={`Clear ${label}`}
-                  className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                  className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
                 >
                   <X className="h-3 w-3" strokeWidth={2} />
                 </button>
@@ -1439,7 +1469,7 @@ function ModelsPanel() {
         </div>
 
         <div className="flex items-center gap-2">
-          <div className="hairline flex min-w-0 flex-1 items-center gap-2 rounded-[7px] bg-white/[0.05] px-2.5 py-1.5">
+          <div className="hairline flex min-w-0 flex-1 items-center gap-2 rounded-[7px] bg-fill px-2.5 py-1.5">
             <Search
               className="h-3.5 w-3.5 shrink-0 text-muted-foreground"
               strokeWidth={2}
@@ -1453,7 +1483,7 @@ function ModelsPanel() {
           </div>
         <button
           aria-label="Filter"
-          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+          className="flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
         >
           <SlidersHorizontal className="h-[15px] w-[15px]" strokeWidth={2} />
         </button>
@@ -1464,7 +1494,7 @@ function ModelsPanel() {
         <button
           aria-label="Add API key"
           title="Add your own API key"
-          className="hairline flex h-7 items-center gap-1.5 rounded-[6px] bg-white/[0.07] px-2.5 text-[12px] font-medium text-foreground transition-colors hover:bg-white/[0.11]"
+          className="hairline flex h-7 items-center gap-1.5 rounded-[6px] bg-fill-hover px-2.5 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
         >
           <KeyRound className="h-[13px] w-[13px]" strokeWidth={2} />
           <Plus className="h-3 w-3" strokeWidth={2.5} />
@@ -1492,8 +1522,8 @@ function ModelsPanel() {
             <div
               key={model.id}
               className={cn(
-                "grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 transition-colors hover:bg-white/[0.04]",
-                i !== rows.length - 1 && "border-b border-white/[0.05]"
+                "grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 transition-colors hover:bg-fill",
+                i !== rows.length - 1 && "border-b border-line"
               )}
             >
               <div className="flex min-w-0 items-center gap-2">
@@ -1522,7 +1552,7 @@ function ModelsPanel() {
                   {model.name}
                 </span>
                 {model.isNew && (
-                  <span className="shrink-0 rounded-[3px] bg-white/[0.12] px-1 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+                  <span className="shrink-0 rounded-[3px] bg-fill-strong px-1 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
                     New
                   </span>
                 )}
@@ -1546,7 +1576,7 @@ function ModelsPanel() {
                     </span>
                     <button
                       aria-label={`Download ${model.name}`}
-                      className="flex h-4 w-4 items-center justify-center rounded-full bg-white/[0.1] text-foreground/70 transition-colors hover:bg-white/20 hover:text-foreground"
+                      className="flex h-4 w-4 items-center justify-center rounded-full bg-fill-hover text-foreground/70 transition-colors hover:bg-fill-strong hover:text-foreground"
                     >
                       <Download className="h-2.5 w-2.5" strokeWidth={2.5} />
                     </button>
@@ -1682,7 +1712,7 @@ function SystemPanel() {
             <div className="flex items-center gap-2">
               <button
                 aria-label="Filesync options"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
               >
                 <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
@@ -1720,7 +1750,7 @@ function SystemPanel() {
             <div className="flex items-center gap-2">
               <button
                 aria-label="Experimental model options"
-                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                className="flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
               >
                 <SettingsIcon className="h-3.5 w-3.5" strokeWidth={2} />
               </button>
@@ -1790,7 +1820,7 @@ function ModesListPanel({
               <button
                 onClick={() => onOpenMode(mode.id)}
                 aria-label={`Open ${mode.name}`}
-                className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
               >
                 <ChevronRight className="h-4 w-4" strokeWidth={2} />
               </button>
@@ -2000,7 +2030,7 @@ function AccountPanel() {
       <div className="hairline relative flex flex-col gap-4 rounded-[10px] bg-card px-4 py-4">
         <button
           aria-label="Show QR code"
-          className="absolute top-3.5 right-3.5 flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+          className="absolute top-3.5 right-3.5 flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
         >
           <QrCode className="h-[18px] w-[18px]" strokeWidth={1.75} />
         </button>
@@ -2023,12 +2053,12 @@ function AccountPanel() {
           </span>
         </div>
 
-        <div className="flex items-center gap-2 border-t border-white/[0.06] pt-3.5">
+        <div className="flex items-center gap-2 border-t border-line pt-3.5">
           <GhostButton>Manage billing</GhostButton>
           <GhostButton>Unlink device</GhostButton>
           <span className="ml-auto flex items-center gap-1.5 text-[12px] font-medium text-foreground/80">
             Superwhisper
-            <span className="rounded-[4px] bg-white/[0.12] px-1.5 py-px text-[9px] font-semibold tracking-wide uppercase">
+            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide uppercase">
               Pro
             </span>
           </span>
@@ -2039,7 +2069,7 @@ function AccountPanel() {
         {links.map((l) => (
           <button
             key={l.label}
-            className="hairline flex items-center gap-1.5 rounded-[7px] bg-card px-3 py-1.5 text-[12px] font-medium text-foreground/85 transition-colors hover:bg-white/[0.08]"
+            className="hairline flex items-center gap-1.5 rounded-[7px] bg-card px-3 py-1.5 text-[12px] font-medium text-foreground/85 transition-colors hover:bg-fill-hover"
           >
             <l.icon
               className="h-3.5 w-3.5 text-muted-foreground"
@@ -2068,6 +2098,8 @@ const SETTINGS_TITLES: Record<SettingsKey, string> = {
 
 export default function SettingsPage() {
   const [active, setActive] = useState<DailyKey>("home");
+  const [theme, setTheme] = useState<ThemePref>("dark");
+  const appearance = useResolvedTheme(theme);
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsKey>("general");
   const [subpage, setSubpage] = useState<Subpage>(null);
@@ -2127,7 +2159,11 @@ export default function SettingsPage() {
     settingsTitle = SETTINGS_TITLES[settingsTab];
     settingsBody =
       settingsTab === "general" ? (
-        <GeneralPanel onOpenSystem={() => setSubpage({ kind: "system" })} />
+        <GeneralPanel
+          onOpenSystem={() => setSubpage({ kind: "system" })}
+          theme={theme}
+          setTheme={setTheme}
+        />
       ) : settingsTab === "dictation" ? (
         <DictationPanel />
       ) : settingsTab === "shortcuts" ? (
@@ -2146,9 +2182,14 @@ export default function SettingsPage() {
   }
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-[oklch(0.1_0_0)] p-10">
+    <main
+      className={cn(
+        "flex min-h-screen items-center justify-center bg-desk p-10 transition-colors duration-300",
+        appearance === "dark" && "dark"
+      )}
+    >
       <MacWindow title={TITLES[active]} width="1020px" height="700px">
-        <div className="flex h-full gap-2 bg-[oklch(0.15_0_0)] p-2">
+        <div className="flex h-full gap-2 bg-chrome p-2">
           {sidebarOpen && (
             <DailyNav
               active={active}
@@ -2164,11 +2205,11 @@ export default function SettingsPage() {
               <button
                 onClick={() => setSidebarOpen((v) => !v)}
                 aria-label="Toggle sidebar"
-                className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+                className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
               >
                 <PanelLeft className="h-[16px] w-[16px]" strokeWidth={2} />
               </button>
-              <button className="flex items-center gap-2 rounded-[6px] px-2 py-1 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-white/[0.06]">
+              <button className="flex items-center gap-2 rounded-[6px] px-2 py-1 text-[12px] font-medium text-foreground/80 transition-colors hover:bg-fill-hover">
                 MacBook Air Microphone
                 <Headphones
                   className="h-[15px] w-[15px] text-muted-foreground"

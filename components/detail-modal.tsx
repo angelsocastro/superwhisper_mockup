@@ -16,7 +16,7 @@ export function DetailModal({
 }) {
   return (
     <div
-      className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
+      className="absolute inset-0 z-50 flex items-center justify-center bg-scrim backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
@@ -24,14 +24,14 @@ export function DetailModal({
         style={{ width }}
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="hairline-b relative flex h-11 shrink-0 items-center justify-center bg-[oklch(0.22_0_0)] px-4">
+        <div className="hairline-b relative flex h-11 shrink-0 items-center justify-center bg-titlebar px-4">
           <span className="text-[13px] font-medium text-foreground/70">
             {title}
           </span>
           <button
             onClick={onClose}
             aria-label="Close"
-            className="absolute right-3 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-white/[0.08] hover:text-foreground"
+            className="absolute right-3 flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <X className="h-[15px] w-[15px]" strokeWidth={2} />
           </button>

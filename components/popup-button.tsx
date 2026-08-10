@@ -18,7 +18,7 @@ export function PopupButton({
   return (
     <button
       className={cn(
-        "hairline flex items-center gap-2 rounded-[6px] bg-white/[0.07] py-1 pr-1.5 pl-2.5 text-[12px] font-medium text-foreground transition-colors hover:bg-white/[0.11]",
+        "hairline flex items-center gap-2 rounded-[6px] bg-fill-hover py-1 pr-1.5 pl-2.5 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong",
         className
       )}
     >

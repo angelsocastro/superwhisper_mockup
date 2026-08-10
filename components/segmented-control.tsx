@@ -20,12 +20,12 @@ export function SegmentedControl({
       onValueChange={(v) => onValueChange(v as string)}
       className={cn("w-fit", className)}
     >
-      <TabsList className="h-8 rounded-[8px] bg-black/25 p-[2px]">
+      <TabsList className="h-8 rounded-[8px] bg-track p-[2px]">
         {options.map((option) => (
           <TabsTrigger
             key={option.value}
             value={option.value}
-            className="rounded-[6px] px-3 text-[12px] font-medium data-active:!bg-[oklch(0.42_0_0)] data-active:!text-foreground data-active:shadow-[0_1px_2px_rgb(0_0_0/0.4)]"
+            className="rounded-[6px] px-3 text-[12px] font-medium data-active:!bg-seg-active data-active:!text-foreground data-active:shadow-[0_1px_2px_rgb(0_0_0/0.25)]"
           >
             {option.label}
           </TabsTrigger>

@@ -48,7 +48,7 @@ export function SettingsRow({
     <div
       className={cn(
         "flex w-full items-center gap-3 px-4 py-3.5 text-left",
-        onClick && "transition-colors hover:bg-white/[0.04]"
+        onClick && "transition-colors hover:bg-fill"
       )}
     >
       {icon && (
@@ -77,7 +77,7 @@ export function SettingsRow({
       ) : (
         body
       )}
-      {!last && <Separator className="ml-4 bg-white/[0.06]" />}
+      {!last && <Separator className="ml-4 bg-line" />}
     </div>
   );
 }

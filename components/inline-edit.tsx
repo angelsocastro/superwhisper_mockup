@@ -72,7 +72,7 @@ export function InlineEdit({
         placeholder={placeholder}
         style={{ fieldSizing: "content" } as React.CSSProperties}
         className={cn(
-          "-mx-1.5 -my-0.5 min-w-[120px] max-w-full rounded-[5px] border border-primary/50 bg-white/[0.07] px-1.5 py-0.5 text-inherit outline-none",
+          "-mx-1.5 -my-0.5 min-w-[120px] max-w-full rounded-[5px] border border-primary/50 bg-fill-hover px-1.5 py-0.5 text-inherit outline-none",
           className
         )}
       />
@@ -84,7 +84,7 @@ export function InlineEdit({
       type="button"
       onClick={() => setEditing(true)}
       className={cn(
-        "-mx-1.5 -my-0.5 max-w-full rounded-[5px] border border-transparent px-1.5 py-0.5 text-left text-inherit transition-colors hover:border-white/15 hover:bg-white/[0.05] focus-visible:border-primary/50 focus-visible:outline-none",
+        "-mx-1.5 -my-0.5 max-w-full rounded-[5px] border border-transparent px-1.5 py-0.5 text-left text-inherit transition-colors hover:border-border hover:bg-fill focus-visible:border-primary/50 focus-visible:outline-none",
         className
       )}
     >
