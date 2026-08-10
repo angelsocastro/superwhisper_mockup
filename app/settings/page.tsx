@@ -10,7 +10,6 @@ import {
   BrainCircuit,
   Wrench,
   History as HistoryIcon,
-  Mic,
   Cloud,
   Sparkles,
   Lock,
@@ -41,6 +40,9 @@ import {
   Lightbulb,
   Asterisk,
   Type,
+  CircleCheck,
+  Circle,
+  ChevronDown,
   CircleUser,
   type LucideIcon,
 } from "lucide-react";
@@ -379,6 +381,7 @@ function DailyNav({
   whatsNew,
   onOpenWhatsNew,
   collapsed,
+  onToggleCollapsed,
 }: {
   active: DailyKey;
   onSelect: (key: DailyKey) => void;
@@ -387,14 +390,41 @@ function DailyNav({
   whatsNew: WhatsNewItem[];
   onOpenWhatsNew: (item: WhatsNewItem) => void;
   collapsed: boolean;
+  onToggleCollapsed: () => void;
 }) {
+  const collapseButton = (
+    <button
+      onClick={onToggleCollapsed}
+      aria-label="Toggle sidebar"
+      className="group relative flex h-7 w-7 shrink-0 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+    >
+      <PanelLeft className="h-[16px] w-[16px]" strokeWidth={2} />
+      {collapsed && <HoverTip label="Show sidebar" />}
+    </button>
+  );
+
   return (
     <aside
       className={cn(
-        "flex shrink-0 flex-col px-2 pt-1 pb-4 transition-[width] duration-200 ease-out",
-        collapsed ? "w-[52px] items-center" : "w-[230px]"
+        "flex shrink-0 flex-col pb-4 transition-[width] duration-200 ease-out",
+        collapsed ? "w-[68px] items-center px-2" : "w-[230px] px-2"
       )}
     >
+      {/* The traffic lights are pinned to the window's top-left by macOS, so
+          this column has to absorb them — which is what frees the content
+          pane to run flush to the top on the right. */}
+      <div
+        className={cn(
+          "flex h-11 shrink-0 items-center",
+          collapsed ? "w-full justify-center" : "w-full gap-3 px-1.5"
+        )}
+      >
+        <TrafficLights />
+        {!collapsed && collapseButton}
+      </div>
+
+      {collapsed && <div className="mb-1">{collapseButton}</div>}
+
       <div className="flex w-full flex-col gap-1">
         {DAILY_USE.map((item) => (
           <button
@@ -455,6 +485,118 @@ function DailyNav({
         </div>
       </div>
     </aside>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                                 setup guide                                 */
+/* -------------------------------------------------------------------------- */
+
+type SetupTask = { id: string; label: string; done: boolean };
+
+const SETUP_SEED: SetupTask[] = [
+  { id: "record", label: "Try your first dictation", done: true },
+  { id: "language", label: "Pick your language", done: true },
+  { id: "shortcuts", label: "Customize your shortcuts", done: false },
+  { id: "vocabulary", label: "Add a word to your vocabulary", done: false },
+];
+
+function SetupGuide({
+  tasks,
+  onToggle,
+  onClose,
+  collapsed,
+  onToggleCollapsed,
+}: {
+  tasks: SetupTask[];
+  onToggle: (id: string) => void;
+  onClose: () => void;
+  collapsed: boolean;
+  onToggleCollapsed: () => void;
+}) {
+  const done = tasks.filter((t) => t.done).length;
+  const pct = Math.round((done / tasks.length) * 100);
+  const allDone = done === tasks.length;
+
+  return (
+    <div className="hairline absolute right-3 bottom-12 z-30 w-[286px] overflow-hidden rounded-[10px] bg-popover shadow-[0_20px_44px_-12px_rgb(0_0_0/0.5)]">
+      <div className="flex items-center gap-1 px-3.5 pt-3">
+        <span className="flex-1 text-[13px] font-semibold text-foreground">
+          Setup guide
+        </span>
+        <button
+          onClick={onToggleCollapsed}
+          aria-label={collapsed ? "Expand setup guide" : "Collapse setup guide"}
+          className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+        >
+          <ChevronDown
+            className={cn(
+              "h-4 w-4 transition-transform",
+              collapsed && "rotate-180"
+            )}
+            strokeWidth={2}
+          />
+        </button>
+        <button
+          onClick={onClose}
+          aria-label="Close setup guide"
+          className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+        >
+          <X className="h-[15px] w-[15px]" strokeWidth={2} />
+        </button>
+      </div>
+
+      <div className="flex items-center gap-2 px-3.5 pt-2 pb-3">
+        <div className="h-1 flex-1 overflow-hidden rounded-full bg-fill-strong">
+          <div
+            className="h-full rounded-full bg-primary transition-[width] duration-300 ease-out"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="shrink-0 text-[11px] font-medium text-muted-foreground tabular-nums">
+          {done}/{tasks.length}
+        </span>
+      </div>
+
+      {!collapsed && (
+        <div className="flex flex-col pb-2">
+          {allDone && (
+            <p className="px-3.5 pb-2 text-[12px] leading-relaxed text-muted-foreground">
+              That&rsquo;s everything — you&rsquo;re set up.
+            </p>
+          )}
+          {tasks.map((task) => (
+            <button
+              key={task.id}
+              onClick={() => onToggle(task.id)}
+              className="flex items-center gap-2.5 px-3.5 py-1.5 text-left transition-colors hover:bg-fill"
+            >
+              {task.done ? (
+                <CircleCheck
+                  className="h-4 w-4 shrink-0 text-primary"
+                  strokeWidth={2}
+                />
+              ) : (
+                <Circle
+                  className="h-4 w-4 shrink-0 text-muted-foreground/50"
+                  strokeWidth={2}
+                />
+              )}
+              <span
+                className={cn(
+                  "text-[13px]",
+                  task.done
+                    ? "text-muted-foreground line-through"
+                    : "text-foreground"
+                )}
+              >
+                {task.label}
+              </span>
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -526,13 +668,7 @@ function LocalModelBanner({ onOpenModels }: { onOpenModels: () => void }) {
   );
 }
 
-function HomePanel({
-  onOpenModels,
-  onOpenShortcuts,
-}: {
-  onOpenModels: () => void;
-  onOpenShortcuts: () => void;
-}) {
+function HomePanel({ onOpenModels }: { onOpenModels: () => void }) {
   const [query, setQuery] = useState("");
 
   const groups = HISTORY_GROUPS.map((g) => ({
@@ -563,39 +699,6 @@ function HomePanel({
       </section>
 
       <LocalModelBanner onOpenModels={onOpenModels} />
-
-      <section className="flex flex-col gap-4">
-        <h2 className="text-[15px] font-semibold text-foreground">
-          Get started
-        </h2>
-        <div className="hairline overflow-hidden rounded-[10px] bg-card">
-          <SettingsRow
-            icon={<Mic className="h-4 w-4" strokeWidth={2} />}
-            label="Start recording"
-            description="Turn your voice into text with a single click."
-            control={<Kbd>fn fn</Kbd>}
-          />
-          <SettingsRow
-            icon={<Keyboard className="h-4 w-4" strokeWidth={2} />}
-            label="Customize your shortcuts"
-            description="Change the keyboard shortcuts for Superwhisper."
-            onClick={onOpenShortcuts}
-            control={
-              <ChevronRight
-                className="h-4 w-4 text-muted-foreground"
-                strokeWidth={2}
-              />
-            }
-          />
-          <SettingsRow
-            icon={<BookOpen className="h-4 w-4" strokeWidth={2} />}
-            label="Add vocabulary"
-            description="Teach Superwhisper custom words, names, or industry terms."
-            control={null}
-            last
-          />
-        </div>
-      </section>
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
@@ -836,10 +939,7 @@ function VocabularyPanel() {
 
 const DAILY_PANELS: Record<
   DailyKey,
-  (props: {
-    onOpenModels: () => void;
-    onOpenShortcuts: () => void;
-  }) => React.ReactNode
+  (props: { onOpenModels: () => void }) => React.ReactNode
 > = {
   home: HomePanel,
   vocabulary: VocabularyPanel,
@@ -2142,6 +2242,17 @@ export default function SettingsPage() {
   const [modesEnabled, setModesEnabled] = useState(false);
   const [modes, setModes] = useState<ModeItem[]>(MODES_SEED);
   const [sidebarOpen, setSidebarOpen] = useState(true);
+  const [setupTasks, setSetupTasks] = useState<SetupTask[]>(SETUP_SEED);
+  const [setupOpen, setSetupOpen] = useState(true);
+  const [setupCollapsed, setSetupCollapsed] = useState(false);
+
+  const setupDone = setupTasks.filter((t) => t.done).length;
+  const allSetupDone = setupDone === setupTasks.length;
+
+  const toggleSetupTask = (id: string) =>
+    setSetupTasks((prev) =>
+      prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t))
+    );
 
   const DailyPanel = DAILY_PANELS[active];
 
@@ -2223,20 +2334,7 @@ export default function SettingsPage() {
       )}
     >
       <MacWindow width="1020px" height="700px">
-        {/* Traffic lights share the top row with real controls, the way apps
-            with a sidebar do — no title bar of their own, no centred title. */}
-        <div className="flex h-11 shrink-0 items-center gap-1 px-4">
-          <TrafficLights />
-          <button
-            onClick={() => setSidebarOpen((v) => !v)}
-            aria-label="Toggle sidebar"
-            className="ml-3 flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-          >
-            <PanelLeft className="h-[16px] w-[16px]" strokeWidth={2} />
-          </button>
-        </div>
-
-        <div className="flex min-h-0 flex-1 gap-2 px-2 pb-2">
+        <div className="flex min-h-0 flex-1">
           <DailyNav
             active={active}
             onSelect={setActive}
@@ -2245,26 +2343,49 @@ export default function SettingsPage() {
             whatsNew={whatsNewStack}
             onOpenWhatsNew={openWhatsNew}
             collapsed={!sidebarOpen}
+            onToggleCollapsed={() => setSidebarOpen((v) => !v)}
           />
-          <div className="hairline flex min-w-0 flex-1 flex-col overflow-hidden rounded-[10px] bg-background">
-            <div className="min-h-0 flex-1 overflow-y-auto px-14 py-12">
-              <div className="mx-auto flex max-w-[560px] flex-col gap-8">
-                <DailyPanel
-                  onOpenModels={() => openSettingsAt("models")}
-                  onOpenShortcuts={() => openSettingsAt("shortcuts")}
-                />
-              </div>
-            </div>
-            {/* Status bar: the input device is ambient state, not a command,
-                so it reads better parked at the bottom than in the toolbar. */}
-            <div className="hairline-t flex h-9 shrink-0 items-center justify-end px-3">
-              <button className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground">
-                MacBook Air Microphone
-                <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
-              </button>
+          {/* Flush to the top and right window edges — only the sidebar has to
+              stay clear for the traffic lights. */}
+          <div className="hairline-l min-w-0 flex-1 overflow-y-auto bg-background px-14 py-12">
+            <div className="mx-auto flex max-w-[560px] flex-col gap-8">
+              <DailyPanel onOpenModels={() => openSettingsAt("models")} />
             </div>
           </div>
         </div>
+
+        {/* Window-wide status bar, outside the content pane. */}
+        <div className="hairline-t flex h-9 shrink-0 items-center justify-end gap-1 px-3">
+          {!setupOpen && !allSetupDone && (
+            <button
+              onClick={() => {
+                setSetupOpen(true);
+                setSetupCollapsed(false);
+              }}
+              className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+            >
+              <CircleCheck className="h-[13px] w-[13px]" strokeWidth={2} />
+              Setup guide
+              <span className="tabular-nums">
+                {setupDone}/{setupTasks.length}
+              </span>
+            </button>
+          )}
+          <button className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground">
+            MacBook Air Microphone
+            <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
+          </button>
+        </div>
+
+        {setupOpen && (
+          <SetupGuide
+            tasks={setupTasks}
+            onToggle={toggleSetupTask}
+            onClose={() => setSetupOpen(false)}
+            collapsed={setupCollapsed}
+            onToggleCollapsed={() => setSetupCollapsed((v) => !v)}
+          />
+        )}
 
         {settingsOpen && (
           <SettingsWindow
