@@ -13,6 +13,7 @@ import {
   Sparkles,
   GripVertical,
   ChevronUp,
+  Check,
   Lock,
   EyeOff,
   X,
@@ -1908,6 +1909,74 @@ const MICS_SEED: MicDevice[] = [
 ];
 
 /**
+ * Quick switcher for the device to record with right now. The ranked list in
+ * Sound decides what gets picked automatically; this is the "not that one,
+ * this one" case, so it stays a menu rather than a settings trip.
+ */
+function MicPopover({
+  mics,
+  activeId,
+  onPick,
+  onOpenSettings,
+  onClose,
+}: {
+  mics: MicDevice[];
+  activeId?: string;
+  onPick: (id: string) => void;
+  onOpenSettings: () => void;
+  onClose: () => void;
+}) {
+  return (
+    <>
+      <div className="absolute inset-0 z-50 bg-black/25" onClick={onClose} />
+      <div className="hairline absolute right-3 bottom-10 z-50 w-[248px] overflow-hidden rounded-[10px] bg-popover/85 py-1 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.7)] backdrop-blur-xl backdrop-saturate-150">
+        {mics.map((mic) => (
+          <button
+            key={mic.id}
+            disabled={!mic.connected}
+            onClick={() => {
+              onPick(mic.id);
+              onClose();
+            }}
+            className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-fill-hover disabled:pointer-events-none disabled:opacity-40"
+          >
+            <Check
+              className={cn(
+                "h-3.5 w-3.5 shrink-0 text-foreground",
+                mic.id !== activeId && "opacity-0"
+              )}
+              strokeWidth={2.5}
+            />
+            <span className="flex-1 truncate text-[13px] text-foreground">
+              {mic.name}
+            </span>
+            {!mic.connected && (
+              <span className="shrink-0 text-[11px] text-muted-foreground">
+                Not connected
+              </span>
+            )}
+          </button>
+        ))}
+
+        <div className="my-1 h-px bg-line" />
+
+        <button
+          onClick={() => {
+            onOpenSettings();
+            onClose();
+          }}
+          className="flex w-full items-center px-2.5 py-1.5 text-left transition-colors hover:bg-fill-hover"
+        >
+          <span className="pl-[22px] text-[13px] text-foreground">
+            Microphone settings…
+          </span>
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
  * A ranked fallback rather than one fixed device. Roughly ten roadmap
  * requests are the same complaint — plugging in or undocking loses the
  * choice — which a single "default microphone" can't express.
@@ -3092,6 +3161,13 @@ export default function SettingsPage() {
   const [modes, setModes] = useState<ModeItem[]>(MODES_SEED);
   const [base, setBase] = useState<BaseSettings>(BASE_DEFAULTS);
   const [mics, setMics] = useState<MicDevice[]>(MICS_SEED);
+  const [pickedMicId, setPickedMicId] = useState<string | null>(null);
+  const [micMenuOpen, setMicMenuOpen] = useState(false);
+
+  /** An explicit pick wins while it lasts; otherwise the ranking decides. */
+  const activeMic =
+    mics.find((m) => m.id === pickedMicId && m.connected) ??
+    mics.find((m) => m.connected);
 
   const reorderMics = (from: number, to: number) =>
     setMics((prev) => {
@@ -3275,15 +3351,25 @@ export default function SettingsPage() {
                 </button>
               )}
               <button
-                onClick={() => openSettingsAt("sound")}
+                onClick={() => setMicMenuOpen((v) => !v)}
                 className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
               >
-                {mics.find((m) => m.connected)?.name ?? "No microphone"}
+                {activeMic?.name ?? "No microphone"}
                 <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
               </button>
             </div>
           </div>
         </div>
+
+        {micMenuOpen && (
+          <MicPopover
+            mics={mics}
+            activeId={activeMic?.id}
+            onPick={setPickedMicId}
+            onOpenSettings={() => openSettingsAt("sound")}
+            onClose={() => setMicMenuOpen(false)}
+          />
+        )}
 
         {setupOpen && (
           <SetupGuide
