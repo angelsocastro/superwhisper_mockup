@@ -11,7 +11,6 @@ import {
   History as HistoryIcon,
   Cloud,
   Sparkles,
-  Wand2,
   GripVertical,
   ChevronUp,
   Check,
@@ -446,7 +445,6 @@ type SettingsKey =
   | "shortcuts"
   | "sound"
   | "privacy"
-  | "transforms"
   | "models"
   | "modes";
 /**
@@ -580,7 +578,6 @@ const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
   { key: "privacy", label: "Privacy", icon: Lock, group: 1 },
   { key: "models", label: "Models", icon: BrainCircuit, group: 2 },
   { key: "modes", label: "Modes", icon: Sparkles, group: 2 },
-  { key: "transforms", label: "Transforms", icon: Wand2, group: 2 },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -1856,79 +1853,6 @@ function DictationPanel({
           locked: true,
         })}
       </SettingsSection>
-    </div>
-  );
-}
-
-/* -------------------------------------------------------------------------- */
-/*                            settings: Transforms                             */
-/* -------------------------------------------------------------------------- */
-
-type Transform = { id: string; name: string; description: string; key: string };
-
-const TRANSFORMS_SEED: Transform[] = [
-  {
-    id: "polish",
-    name: "Polish",
-    description: "Tightens wording and fixes grammar, keeps your voice.",
-    key: "⌥ 1",
-  },
-  {
-    id: "shorten",
-    name: "Shorten",
-    description: "Cuts it down without losing anything that matters.",
-    key: "⌥ 2",
-  },
-  {
-    id: "reply",
-    name: "Draft a reply",
-    description: "Turns notes into a reply to whatever you're looking at.",
-    key: "⌥ 3",
-  },
-];
-
-/**
- * On-demand rewrites of text that already exists, invoked by hotkey — not a
- * mode. Modes decide how dictation comes out; a transform is something you
- * run afterwards, which is why the two don't belong in the same list.
- */
-function TransformsPanel({ transforms }: { transforms: Transform[] }) {
-  return (
-    <div className="flex flex-col gap-8">
-      <p className="text-[12px] leading-relaxed text-muted-foreground">
-        Select text anywhere, press a shortcut, and Superwhisper rewrites it in
-        place. Unlike a mode, a transform runs on text that already exists —
-        including text you didn&rsquo;t dictate.
-      </p>
-
-      <SettingsSection
-        title="Your transforms"
-        description="Each one is a prompt with a shortcut attached."
-      >
-        {transforms.map((t, i) => (
-          <SettingsRow
-            key={t.id}
-            label={t.name}
-            description={t.description}
-            last={i === transforms.length - 1}
-            control={
-              <div className="flex items-center gap-2">
-                <Kbd>{t.key}</Kbd>
-                <ChevronRight
-                  className="h-4 w-4 text-muted-foreground"
-                  strokeWidth={2}
-                />
-              </div>
-            }
-            onClick={() => {}}
-          />
-        ))}
-      </SettingsSection>
-
-      <div className="flex items-center gap-2">
-        <GhostButton>+ Create transform</GhostButton>
-        <GhostButton>Reset to defaults</GhostButton>
-      </div>
     </div>
   );
 }
@@ -3694,8 +3618,6 @@ export default function SettingsPage() {
         <DictationPanel managed={isManaged} base={base} onChange={setBaseValue} />
       ) : settingsTab === "shortcuts" ? (
         <ShortcutsPanel />
-      ) : settingsTab === "transforms" ? (
-        <TransformsPanel transforms={TRANSFORMS_SEED} />
       ) : settingsTab === "privacy" ? (
         <PrivacyPanel base={base} onChange={setBaseValue} modes={modes} />
       ) : settingsTab === "sound" ? (
