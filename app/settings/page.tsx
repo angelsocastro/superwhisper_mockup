@@ -31,7 +31,6 @@ import {
   AudioLines,
   PanelLeft,
   Headphones,
-  Share,
   RotateCcw,
   Plus,
   Trash2,
@@ -1356,7 +1355,7 @@ function HomePanel({
             aria-label="Export stats"
             className="flex h-6 w-6 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
-            <Share className="h-[15px] w-[15px]" strokeWidth={2} />
+            <Download className="h-[15px] w-[15px]" strokeWidth={2} />
           </button>
         </div>
         <div className="grid grid-cols-4 gap-6">
@@ -1501,7 +1500,7 @@ function DictionaryPanel() {
             title="Export list"
             className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
-            <Share className="h-[15px] w-[15px]" strokeWidth={2} />
+            <Download className="h-[15px] w-[15px]" strokeWidth={2} />
           </button>
         </div>
       </div>
