@@ -1306,22 +1306,20 @@ function HistoryRow({ item }: { item: HistoryItem }) {
  * so far. Stats and history are worth having, but they're a look backward;
  * this is the look forward, so it comes first.
  */
-function DictationHero({
-  modeName,
-  micName,
-}: {
-  modeName: string;
-  micName: string;
-}) {
+function DictationHero({ modeName }: { modeName: string }) {
   return (
-    <div className="flex items-center gap-3">
-      <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/12">
-        <Mic className="h-[15px] w-[15px] text-primary" strokeWidth={2} />
+    <div className="flex items-center gap-3.5">
+      <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/12">
+        <Mic className="h-[18px] w-[18px] text-primary" strokeWidth={2} />
       </div>
-      <p className="min-w-0 text-[15px] leading-snug text-foreground">
-        Hold <Kbd>Fn</Kbd> anywhere to dictate — right now that&rsquo;s{" "}
-        <span className="font-semibold">{modeName}</span>, via {micName}.
-      </p>
+      <div className="flex min-w-0 flex-col gap-0.5">
+        <p className="flex items-center gap-2 text-[21px] font-semibold tracking-tight text-foreground">
+          Hold <Kbd>Fn</Kbd> to dictate
+        </p>
+        <p className="truncate text-[13px] text-muted-foreground">
+          Into {modeName}
+        </p>
+      </div>
     </div>
   );
 }
@@ -1329,11 +1327,9 @@ function DictationHero({
 function HomePanel({
   onOpenModels,
   activeModeName,
-  activeMicName,
 }: {
   onOpenModels: () => void;
   activeModeName: string;
-  activeMicName: string;
 }) {
   const [query, setQuery] = useState("");
 
@@ -1346,7 +1342,7 @@ function HomePanel({
 
   return (
     <div className="flex flex-col gap-10">
-      <DictationHero modeName={activeModeName} micName={activeMicName} />
+      <DictationHero modeName={activeModeName} />
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between">
@@ -1605,7 +1601,6 @@ const DAILY_PANELS: Record<
   (props: {
     onOpenModels: () => void;
     activeModeName: string;
-    activeMicName: string;
   }) => React.ReactNode
 > = {
   home: HomePanel,
@@ -3873,11 +3868,10 @@ export default function SettingsPage() {
                 chrome. It starts at the top of the window rather than below a
                 title strip — the sidebar absorbs the traffic lights instead. */}
             <div className="hairline min-h-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-14 py-12">
-              <div className="mx-auto flex max-w-[560px] flex-col gap-8">
+              <div className="mx-auto flex w-full max-w-[720px] flex-col gap-8">
                 <DailyPanel
                   onOpenModels={() => openSettingsAt("models")}
                   activeModeName={activeMode?.name ?? "Super"}
-                  activeMicName={activeMic?.name ?? "No microphone"}
                 />
               </div>
             </div>
