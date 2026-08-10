@@ -41,6 +41,7 @@ import {
   Lightbulb,
   Asterisk,
   Type,
+  CircleUser,
   type LucideIcon,
 } from "lucide-react";
 import { MacWindow, TrafficLights } from "@/components/mac-window";
@@ -208,6 +209,7 @@ function useResolvedTheme(pref: ThemePref) {
 
 type DailyKey = "home" | "vocabulary";
 type SettingsKey =
+  | "account"
   | "general"
   | "dictation"
   | "shortcuts"
@@ -226,6 +228,7 @@ const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
 ];
 
 const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
+  { key: "account", label: "Account", icon: CircleUser, group: 0 },
   { key: "general", label: "General", icon: SettingsIcon, group: 1 },
   { key: "dictation", label: "Dictation", icon: Type, group: 1 },
   { key: "shortcuts", label: "Shortcuts", icon: Keyboard, group: 1 },
@@ -2050,59 +2053,74 @@ function AccountPanel() {
   ];
 
   return (
-    <div className="flex flex-col gap-6">
-      <div className="hairline relative flex flex-col gap-4 rounded-[10px] bg-card px-4 py-4">
-        <button
-          aria-label="Show QR code"
-          className="absolute top-3.5 right-3.5 flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-        >
-          <QrCode className="h-[18px] w-[18px]" strokeWidth={1.75} />
-        </button>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-[12px] text-muted-foreground">Email</span>
-          <span className="flex items-center gap-1.5 text-[13px] font-medium text-foreground">
+    <div className="flex flex-col gap-8">
+      <div className="flex items-center gap-3">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[15px] font-semibold">
+          A
+        </div>
+        <div className="flex flex-col gap-0.5">
+          <span className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground">
             angel@caudalflow.com
-            <Pencil
-              className="h-3 w-3 text-muted-foreground"
-              strokeWidth={2}
-            />
+            <button
+              aria-label="Edit email"
+              className="text-muted-foreground transition-colors hover:text-foreground"
+            >
+              <Pencil className="h-3.5 w-3.5" strokeWidth={2} />
+            </button>
           </span>
-        </div>
-
-        <div className="flex flex-col gap-1">
-          <span className="text-[12px] text-muted-foreground">License Key</span>
-          <span className="font-mono text-[13px] tracking-wider text-foreground/80">
-            •••••••• — •••• — •••• — •••• — ••••••••5904
-          </span>
-        </div>
-
-        <div className="flex items-center gap-2 border-t border-line pt-3.5">
-          <GhostButton>Manage billing</GhostButton>
-          <GhostButton>Unlink device</GhostButton>
-          <span className="ml-auto flex items-center gap-1.5 text-[12px] font-medium text-foreground/80">
+          <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
             Superwhisper
-            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide uppercase">
+            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
               Pro
             </span>
           </span>
         </div>
       </div>
 
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        {links.map((l) => (
-          <button
+      <SettingsSection title="License">
+        <SettingsRow
+          label="License key"
+          description="•••••••• — •••• — •••• — •••• — ••••••••5904"
+          control={
+            <button
+              aria-label="Show QR code"
+              title="Show QR code"
+              className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+            >
+              <QrCode className="h-[18px] w-[18px]" strokeWidth={1.75} />
+            </button>
+          }
+        />
+        <SettingsRow
+          label="Billing"
+          description="Manage your plan, invoices and payment method."
+          control={<GhostButton>Manage billing</GhostButton>}
+        />
+        <SettingsRow
+          label="This device"
+          description="Frees the seat so you can activate another Mac."
+          last
+          control={<GhostButton>Unlink device</GhostButton>}
+        />
+      </SettingsSection>
+
+      <SettingsSection title="Community & support">
+        {links.map((l, i) => (
+          <SettingsRow
             key={l.label}
-            className="hairline flex items-center gap-1.5 rounded-[7px] bg-card px-3 py-1.5 text-[12px] font-medium text-foreground/85 transition-colors hover:bg-fill-hover"
-          >
-            <l.icon
-              className="h-3.5 w-3.5 text-muted-foreground"
-              strokeWidth={2}
-            />
-            {l.label}
-          </button>
+            icon={<l.icon className="h-4 w-4" strokeWidth={2} />}
+            label={l.label}
+            last={i === links.length - 1}
+            control={
+              <ChevronRight
+                className="h-4 w-4 text-muted-foreground"
+                strokeWidth={2}
+              />
+            }
+            onClick={() => {}}
+          />
         ))}
-      </div>
+      </SettingsSection>
     </div>
   );
 }
@@ -2111,15 +2129,6 @@ function AccountPanel() {
 /*                                    shell                                    */
 /* -------------------------------------------------------------------------- */
 
-const SETTINGS_TITLES: Record<SettingsKey, string> = {
-  general: "General",
-  dictation: "Dictation",
-  shortcuts: "Shortcuts",
-  sound: "Sound",
-  models: "Models",
-  advanced: "Advanced",
-};
-
 export default function SettingsPage() {
   const [active, setActive] = useState<DailyKey>("home");
   const [theme, setTheme] = useState<ThemePref>("dark");
@@ -2127,7 +2136,6 @@ export default function SettingsPage() {
   const [settingsOpen, setSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<SettingsKey>("general");
   const [subpage, setSubpage] = useState<Subpage>(null);
-  const [accountOpen, setAccountOpen] = useState(false);
   const [whatsNewItem, setWhatsNewItem] = useState<WhatsNewItem | null>(null);
   const [whatsNewStack, setWhatsNewStack] =
     useState<WhatsNewItem[]>(WHATS_NEW_SEED);
@@ -2156,14 +2164,17 @@ export default function SettingsPage() {
       ? modes.find((m) => m.id === subpage.modeId)
       : undefined;
 
-  // Which pane the settings window shows, plus its title and back target.
+  // Which pane the settings window shows, plus its back target.
   let settingsBody: React.ReactNode;
-  let settingsTitle: string;
   let onBack: (() => void) | undefined;
+  const paneKey = subpage
+    ? subpage.kind === "modeDetail"
+      ? `mode:${subpage.modeId}`
+      : subpage.kind
+    : settingsTab;
 
   if (subpage?.kind === "system") {
     settingsBody = <SystemPanel />;
-    settingsTitle = "System & integrations";
     onBack = () => setSubpage(null);
   } else if (subpage?.kind === "modesList") {
     settingsBody = (
@@ -2173,16 +2184,15 @@ export default function SettingsPage() {
         onRename={renameMode}
       />
     );
-    settingsTitle = "Modes";
     onBack = () => setSubpage(null);
   } else if (detailMode) {
     settingsBody = <ModeDetailPanel mode={detailMode} />;
-    settingsTitle = detailMode.name;
     onBack = () => setSubpage({ kind: "modesList" });
   } else {
-    settingsTitle = SETTINGS_TITLES[settingsTab];
     settingsBody =
-      settingsTab === "general" ? (
+      settingsTab === "account" ? (
+        <AccountPanel />
+      ) : settingsTab === "general" ? (
         <GeneralPanel
           onOpenSystem={() => setSubpage({ kind: "system" })}
           theme={theme}
@@ -2231,7 +2241,7 @@ export default function SettingsPage() {
             active={active}
             onSelect={setActive}
             onOpenSettings={() => openSettingsAt("general")}
-            onOpenAccount={() => setAccountOpen(true)}
+            onOpenAccount={() => openSettingsAt("account")}
             whatsNew={whatsNewStack}
             onOpenWhatsNew={openWhatsNew}
             collapsed={!sidebarOpen}
@@ -2258,7 +2268,7 @@ export default function SettingsPage() {
 
         {settingsOpen && (
           <SettingsWindow
-            title={settingsTitle}
+            paneKey={paneKey}
             tabs={SETTINGS_TABS}
             active={settingsTab}
             onTabChange={(key) => {
@@ -2275,19 +2285,8 @@ export default function SettingsPage() {
           </SettingsWindow>
         )}
 
-        {accountOpen && (
-          <DetailModal
-            title="Account"
-            width="480px"
-            onClose={() => setAccountOpen(false)}
-          >
-            <AccountPanel />
-          </DetailModal>
-        )}
-
         {whatsNewItem && (
           <DetailModal
-            title="What's New"
             width="440px"
             onClose={() => setWhatsNewItem(null)}
           >
