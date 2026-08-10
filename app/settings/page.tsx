@@ -2201,10 +2201,12 @@ function ModePopover({
           () => onPick(null),
           autoMode ? autoMode.name : "Super"
         )}
-        {row("Super — no mode", override === "super", () => onPick("super"))}
 
         <div className="my-1 h-px bg-line" />
 
+        {/* Super is one more row here too — same list as the custom modes,
+            just first, the way it's pinned first in the Modes settings list. */}
+        {row("Super", override === "super", () => onPick("super"), "Base")}
         {modes.map((mode) =>
           row(
             mode.name,
