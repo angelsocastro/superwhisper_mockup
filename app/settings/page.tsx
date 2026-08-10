@@ -873,14 +873,10 @@ function SetupGuide({
   tasks,
   onToggle,
   onClose,
-  collapsed,
-  onToggleCollapsed,
 }: {
   tasks: SetupTask[];
   onToggle: (id: string) => void;
   onClose: () => void;
-  collapsed: boolean;
-  onToggleCollapsed: () => void;
 }) {
   const done = tasks.filter((t) => t.done).length;
   const pct = Math.round((done / tasks.length) * 100);
@@ -892,19 +888,6 @@ function SetupGuide({
         <span className="flex-1 text-[13px] font-semibold text-foreground">
           Setup guide
         </span>
-        <button
-          onClick={onToggleCollapsed}
-          aria-label={collapsed ? "Expand setup guide" : "Collapse setup guide"}
-          className="flex h-6 w-6 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-        >
-          <ChevronDown
-            className={cn(
-              "h-4 w-4 transition-transform",
-              collapsed && "rotate-180",
-            )}
-            strokeWidth={2}
-          />
-        </button>
         <button
           onClick={onClose}
           aria-label="Close setup guide"
@@ -926,8 +909,7 @@ function SetupGuide({
         </span>
       </div>
 
-      {!collapsed && (
-        <div className="flex flex-col pb-2">
+      <div className="flex flex-col pb-2">
           {allDone && (
             <p className="px-3.5 pb-2 text-[12px] leading-relaxed text-muted-foreground">
               That&rsquo;s everything — you&rsquo;re set up.
@@ -961,9 +943,8 @@ function SetupGuide({
                 {task.label}
               </span>
             </button>
-          ))}
-        </div>
-      )}
+        ))}
+      </div>
     </div>
   );
 }
@@ -3206,7 +3187,6 @@ export default function SettingsPage() {
   const [sidebarOpen, setSidebarOpen] = useState(true);
   const [setupTasks, setSetupTasks] = useState<SetupTask[]>(SETUP_SEED);
   const [setupOpen, setSetupOpen] = useState(true);
-  const [setupCollapsed, setSetupCollapsed] = useState(false);
 
   const setupDone = setupTasks.filter((t) => t.done).length;
   const allSetupDone = setupDone === setupTasks.length;
@@ -3337,10 +3317,7 @@ export default function SettingsPage() {
             <div className="flex h-8 shrink-0 items-center justify-end gap-1 px-1">
               {!setupOpen && !allSetupDone && (
                 <button
-                  onClick={() => {
-                    setSetupOpen(true);
-                    setSetupCollapsed(false);
-                  }}
+                  onClick={() => setSetupOpen(true)}
                   className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
                 >
                   <CircleCheck className="h-[13px] w-[13px]" strokeWidth={2} />
@@ -3376,8 +3353,6 @@ export default function SettingsPage() {
             tasks={setupTasks}
             onToggle={toggleSetupTask}
             onClose={() => setSetupOpen(false)}
-            collapsed={setupCollapsed}
-            onToggleCollapsed={() => setSetupCollapsed((v) => !v)}
           />
         )}
 
