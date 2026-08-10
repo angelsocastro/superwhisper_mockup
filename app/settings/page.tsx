@@ -15,6 +15,7 @@ import {
   GripVertical,
   ChevronUp,
   Check,
+  Pin,
   Lock,
   EyeOff,
   X,
@@ -1993,6 +1994,102 @@ const MICS_SEED: MicDevice[] = [
 ];
 
 /**
+ * Auto and "no mode" only coincide when you're in an app nothing is mapped
+ * to — which is most of the time, and why they read as the same thing. Auto
+ * carries what it currently resolves to so the difference is visible.
+ */
+function ModePopover({
+  modes,
+  override,
+  autoMode,
+  onPick,
+  onOpenSettings,
+  onClose,
+}: {
+  modes: ModeItem[];
+  override: string | null;
+  autoMode?: ModeItem;
+  onPick: (value: string | null) => void;
+  onOpenSettings: () => void;
+  onClose: () => void;
+}) {
+  const row = (
+    label: string,
+    checked: boolean,
+    onClick: () => void,
+    trailing?: string,
+    disabled?: boolean
+  ) => (
+    <button
+      key={label}
+      disabled={disabled}
+      onClick={() => {
+        onClick();
+        onClose();
+      }}
+      className="flex w-full items-center gap-2 px-2.5 py-1.5 text-left transition-colors hover:bg-fill-hover disabled:pointer-events-none disabled:opacity-40"
+    >
+      <Check
+        className={cn(
+          "h-3.5 w-3.5 shrink-0 text-foreground",
+          !checked && "opacity-0"
+        )}
+        strokeWidth={2.5}
+      />
+      <span className="flex-1 truncate text-[13px] text-foreground">
+        {label}
+      </span>
+      {trailing && (
+        <span className="shrink-0 text-[11px] text-muted-foreground">
+          {trailing}
+        </span>
+      )}
+    </button>
+  );
+
+  return (
+    <>
+      <div className="absolute inset-0 z-50 bg-black/25" onClick={onClose} />
+      <div className="hairline absolute right-3 bottom-10 z-50 w-[276px] overflow-hidden rounded-[10px] bg-popover/85 py-1 shadow-[0_24px_60px_-12px_rgb(0_0_0/0.7)] backdrop-blur-xl backdrop-saturate-150">
+        {row(
+          "Auto",
+          override === null,
+          () => onPick(null),
+          autoMode ? autoMode.name : "Super"
+        )}
+        {row("Super — no mode", override === "super", () => onPick("super"))}
+
+        <div className="my-1 h-px bg-line" />
+
+        {modes.map((mode) =>
+          row(
+            mode.name,
+            override === mode.id,
+            () => onPick(mode.id),
+            mode.enabled ? undefined : "Off",
+            !mode.enabled
+          )
+        )}
+
+        <div className="my-1 h-px bg-line" />
+
+        <button
+          onClick={() => {
+            onOpenSettings();
+            onClose();
+          }}
+          className="flex w-full items-center px-2.5 py-1.5 text-left transition-colors hover:bg-fill-hover"
+        >
+          <span className="pl-[22px] text-[13px] text-foreground">
+            Mode settings…
+          </span>
+        </button>
+      </div>
+    </>
+  );
+}
+
+/**
  * Quick switcher for the device to record with right now. The ranked list in
  * Sound decides what gets picked automatically; this is the "not that one,
  * this one" case, so it stays a menu rather than a settings trip.
@@ -3280,7 +3377,18 @@ export default function SettingsPage() {
   const [base, setBase] = useState<BaseSettings>(BASE_DEFAULTS);
   const [mics, setMics] = useState<MicDevice[]>(MICS_SEED);
   const [pickedMicId, setPickedMicId] = useState<string | null>(null);
+  /** null = let the app decide, "super" = pin the base, otherwise a mode id. */
+  const [modeOverride, setModeOverride] = useState<string | null>(null);
+  const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [micMenuOpen, setMicMenuOpen] = useState(false);
+
+  const autoMode = modes.find((m) => m.enabled);
+  const activeMode =
+    modeOverride === null
+      ? autoMode
+      : modeOverride === "super"
+        ? undefined
+        : modes.find((m) => m.id === modeOverride);
 
   /** An explicit pick wins while it lasts; otherwise the ranking decides. */
   const activeMic =
@@ -3462,12 +3570,25 @@ export default function SettingsPage() {
               {/* Which mode is live is a glanceable fact, not a place to
                   navigate to — so it sits here rather than in the sidebar. */}
               <button
-                onClick={() => openSettingsAt("modes")}
-                title="Active mode"
-                className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+                onClick={() => setModeMenuOpen((v) => !v)}
+                title={
+                  modeOverride === null
+                    ? "Mode follows the app you're in"
+                    : "Mode is pinned — click to go back to Auto"
+                }
+                className={cn(
+                  "flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium transition-colors hover:bg-fill-hover hover:text-foreground",
+                  modeOverride === null
+                    ? "text-muted-foreground"
+                    : "text-foreground"
+                )}
               >
-                <Sparkles className="h-[13px] w-[13px]" strokeWidth={2} />
-                {modes.find((m) => m.enabled)?.name ?? "Super"}
+                {modeOverride === null ? (
+                  <Sparkles className="h-[13px] w-[13px]" strokeWidth={2} />
+                ) : (
+                  <Pin className="h-[13px] w-[13px]" strokeWidth={2} />
+                )}
+                {activeMode?.name ?? "Super"}
               </button>
               {!setupOpen && !allSetupDone && (
                 <button
@@ -3491,6 +3612,17 @@ export default function SettingsPage() {
             </div>
           </div>
         </div>
+
+        {modeMenuOpen && (
+          <ModePopover
+            modes={modes}
+            override={modeOverride}
+            autoMode={autoMode}
+            onPick={setModeOverride}
+            onOpenSettings={() => openSettingsAt("modes")}
+            onClose={() => setModeMenuOpen(false)}
+          />
+        )}
 
         {micMenuOpen && (
           <MicPopover
