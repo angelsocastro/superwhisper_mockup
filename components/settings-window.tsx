@@ -3,6 +3,7 @@
 import { ReactNode } from "react";
 import { ChevronLeft, X } from "lucide-react";
 import type { LucideIcon } from "lucide-react";
+import { AppIcon, type IconTone } from "@/components/app-icon";
 import { cn } from "@/lib/utils";
 
 export function SettingsWindow({
@@ -15,7 +16,7 @@ export function SettingsWindow({
   children,
 }: {
   title?: string;
-  tabs: { key: string; label: string; icon: LucideIcon }[];
+  tabs: { key: string; label: string; icon: LucideIcon; tone: IconTone }[];
   active: string;
   onTabChange: (key: string) => void;
   onClose: () => void;
@@ -61,13 +62,13 @@ export function SettingsWindow({
                 key={tab.key}
                 onClick={() => onTabChange(tab.key)}
                 className={cn(
-                  "flex w-[68px] flex-col items-center gap-1 rounded-[7px] py-1.5 text-[11px] font-medium transition-colors",
+                  "flex w-[68px] flex-col items-center gap-1.5 rounded-[7px] py-1.5 text-[11px] font-medium transition-colors",
                   active === tab.key
-                    ? "bg-primary/15 text-primary"
+                    ? "bg-white/[0.11] text-foreground"
                     : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground/80"
                 )}
               >
-                <tab.icon className="h-[18px] w-[18px]" strokeWidth={1.75} />
+                <AppIcon icon={tab.icon} tone={tab.tone} size={24} />
                 {tab.label}
               </button>
             ))}
