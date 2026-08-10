@@ -712,6 +712,31 @@ function SettingControl({
   return <PopupButton value={value as string} />;
 }
 
+/**
+ * Every settings panel starts with a title — never with a loose paragraph
+ * floating at the top with nothing labeling the page. The sidebar highlight
+ * alone isn't enough once you're on a sub-page (Super, a mode, a plan list)
+ * where nothing in the nav names where you actually are.
+ */
+function PanelIntro({
+  title,
+  description,
+}: {
+  title: string;
+  description?: React.ReactNode;
+}) {
+  return (
+    <div className="flex flex-col gap-1">
+      <h1 className="text-[15px] font-semibold text-foreground">{title}</h1>
+      {description && (
+        <p className="text-[12px] leading-relaxed text-muted-foreground">
+          {description}
+        </p>
+      )}
+    </div>
+  );
+}
+
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
     <kbd className="hairline rounded-[5px] bg-fill-hover px-2 py-1 text-[11px] font-medium">
@@ -1814,10 +1839,10 @@ function DictationPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-[12px] leading-relaxed text-muted-foreground">
-        These are Super&rsquo;s defaults — what applies whenever no mode says
-        otherwise.
-      </p>
+      <PanelIntro
+        title="Dictation"
+        description="These are Super’s defaults — what applies whenever no mode says otherwise."
+      />
 
       <SettingsSection
         title="Language"
@@ -2751,10 +2776,10 @@ function SuperDetailPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-[12px] leading-relaxed text-muted-foreground">
-        This is what everyone gets unless a mode overrides it. Click any row
-        to edit it where it actually lives.
-      </p>
+      <PanelIntro
+        title="Super"
+        description="This is what everyone gets unless a mode overrides it. Click any row to edit it where it actually lives."
+      />
 
       {groups.map((group) => (
         <SettingsSection key={group} title={group}>
@@ -2802,11 +2827,17 @@ function ModesPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-[12px] leading-relaxed text-muted-foreground">
-        Super handles everything on its own. A mode only kicks in for the apps
-        you point it at, and only changes what it lists — so you switch one on
-        rather than building one. {on} of {modes.length} are on.
-      </p>
+      <PanelIntro
+        title="Modes"
+        description={
+          <>
+            Super handles everything on its own. A mode only kicks in for the
+            apps you point it at, and only changes what it lists — so you
+            switch one on rather than building one. {on} of {modes.length} are
+            on.
+          </>
+        }
+      />
 
       <section className="flex flex-col gap-4">
         {/* Pinned, not a toggle: this is the thing modes are diffs against,
@@ -2836,7 +2867,9 @@ function ModesPanel({
         </div>
 
         <div className="flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-foreground">Modes</h2>
+          <h2 className="text-[15px] font-semibold text-foreground">
+            Custom modes
+          </h2>
           <GhostButton>+ Create mode</GhostButton>
         </div>
 
@@ -3007,17 +3040,20 @@ function ModeDetailPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <p className="text-[12px] leading-relaxed text-muted-foreground">
-        {overridden.length === 0 ? (
-          <>This mode changes nothing yet — it follows Super entirely.</>
-        ) : (
-          <>
-            Overrides {overridden.length}{" "}
-            {overridden.length === 1 ? "setting" : "settings"}. Everything else
-            follows Super.
-          </>
-        )}
-      </p>
+      <PanelIntro
+        title={mode.name}
+        description={
+          overridden.length === 0 ? (
+            <>This mode changes nothing yet — it follows Super entirely.</>
+          ) : (
+            <>
+              Overrides {overridden.length}{" "}
+              {overridden.length === 1 ? "setting" : "settings"}. Everything
+              else follows Super.
+            </>
+          )
+        }
+      />
 
       <SamplePreview base={base} mode={mode} />
 
@@ -3476,10 +3512,10 @@ const PLANS: {
 function PlansPanel({ current = "pro" }: { current?: string }) {
   return (
     <div className="flex flex-col gap-5">
-      <p className="text-[12px] leading-relaxed text-muted-foreground">
-        Upgrades apply right away. Downgrades take effect on Sep 4, 2026, when
-        the current period ends.
-      </p>
+      <PanelIntro
+        title="Plans"
+        description="Upgrades apply right away. Downgrades take effect on Sep 4, 2026, when the current period ends."
+      />
 
       <div className="flex flex-col gap-2">
         {PLANS.map((plan) => {
