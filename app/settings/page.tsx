@@ -45,7 +45,7 @@ import {
   type LucideIcon,
 } from "lucide-react";
 import { MacWindow } from "@/components/mac-window";
-import { SettingsWindow } from "@/components/settings-window";
+import { SettingsWindow, type SettingsTab } from "@/components/settings-window";
 import { DetailModal } from "@/components/detail-modal";
 import { SettingsSection, SettingsRow } from "@/components/settings-parts";
 import { InlineEdit } from "@/components/inline-edit";
@@ -209,18 +209,13 @@ const DAILY_USE: {
   { key: "vocabulary", label: "Vocabulary", icon: BookOpen, tone: "blue" },
 ];
 
-const SETTINGS_TABS: {
-  key: SettingsKey;
-  label: string;
-  icon: LucideIcon;
-  tone: IconTone;
-}[] = [
-  { key: "general", label: "General", icon: SettingsIcon, tone: "gray" },
-  { key: "dictation", label: "Dictation", icon: Type, tone: "indigo" },
-  { key: "shortcuts", label: "Shortcuts", icon: Keyboard, tone: "slate" },
-  { key: "sound", label: "Sound", icon: Volume2, tone: "pink" },
-  { key: "models", label: "Models", icon: BrainCircuit, tone: "purple" },
-  { key: "advanced", label: "Advanced", icon: Wrench, tone: "gray" },
+const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
+  { key: "general", label: "General", icon: SettingsIcon, tone: "gray", group: 1 },
+  { key: "dictation", label: "Dictation", icon: Type, tone: "indigo", group: 1 },
+  { key: "shortcuts", label: "Shortcuts", icon: Keyboard, tone: "slate", group: 1 },
+  { key: "sound", label: "Sound", icon: Volume2, tone: "pink", group: 1 },
+  { key: "models", label: "Models", icon: BrainCircuit, tone: "purple", group: 2 },
+  { key: "advanced", label: "Advanced", icon: Wrench, tone: "teal", group: 2 },
 ];
 
 const TITLES: Record<DailyKey, string> = {

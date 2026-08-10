@@ -6,6 +6,15 @@ import type { LucideIcon } from "lucide-react";
 import { AppIcon, type IconTone } from "@/components/app-icon";
 import { cn } from "@/lib/utils";
 
+export type SettingsTab = {
+  key: string;
+  label: string;
+  icon: LucideIcon;
+  tone: IconTone;
+  /** Items sharing a group number sit together, separated by a gap. */
+  group: number;
+};
+
 export function SettingsWindow({
   title = "Settings",
   tabs,
@@ -16,21 +25,23 @@ export function SettingsWindow({
   children,
 }: {
   title?: string;
-  tabs: { key: string; label: string; icon: LucideIcon; tone: IconTone }[];
+  tabs: SettingsTab[];
   active: string;
   onTabChange: (key: string) => void;
   onClose: () => void;
-  /** When set, the pane is a sub-page: tabs are hidden and a back chevron shows. */
+  /** When set, the content pane is a sub-page and a back chevron shows. */
   onBack?: () => void;
   children: ReactNode;
 }) {
+  const groups = [...new Set(tabs.map((t) => t.group))].sort();
+
   return (
     <div
       className="absolute inset-0 z-50 flex items-center justify-center bg-black/50 backdrop-blur-[2px]"
       onClick={onClose}
     >
       <div
-        className="hairline flex w-[600px] flex-col overflow-hidden rounded-[10px] bg-card shadow-[0_50px_100px_-20px_rgb(0_0_0/0.8)]"
+        className="hairline flex w-[760px] flex-col overflow-hidden rounded-[10px] bg-card shadow-[0_50px_100px_-20px_rgb(0_0_0/0.8)]"
         onClick={(e) => e.stopPropagation()}
       >
         <div className="hairline-b relative flex h-11 shrink-0 items-center justify-center bg-[oklch(0.22_0_0)] px-4">
@@ -55,33 +66,34 @@ export function SettingsWindow({
           </button>
         </div>
 
-        {!onBack && (
-          <div className="hairline-b flex items-center justify-center gap-1.5 bg-[oklch(0.19_0_0)] px-5 py-3">
-            {tabs.map((tab) => (
-              <button
-                key={tab.key}
-                onClick={() => onTabChange(tab.key)}
-                className={cn(
-                  "flex w-[68px] flex-col items-center gap-1.5 rounded-[7px] py-1.5 text-[11px] font-medium transition-colors",
-                  active === tab.key
-                    ? "bg-white/[0.11] text-foreground"
-                    : "text-muted-foreground hover:bg-white/[0.05] hover:text-foreground/80"
-                )}
-              >
-                <AppIcon icon={tab.icon} tone={tab.tone} size={24} />
-                {tab.label}
-              </button>
+        <div className="flex h-[500px]">
+          <nav className="vibrancy flex w-[196px] shrink-0 flex-col gap-5 overflow-y-auto px-2.5 py-4">
+            {groups.map((group) => (
+              <div key={group} className="flex flex-col gap-0.5">
+                {tabs
+                  .filter((t) => t.group === group)
+                  .map((tab) => (
+                    <button
+                      key={tab.key}
+                      onClick={() => onTabChange(tab.key)}
+                      className={cn(
+                        "flex items-center gap-2.5 rounded-[7px] px-2 py-1.5 text-left text-[13px] font-medium transition-colors",
+                        active === tab.key
+                          ? "bg-white/[0.11] text-foreground"
+                          : "text-foreground/80 hover:bg-white/[0.06]"
+                      )}
+                    >
+                      <AppIcon icon={tab.icon} tone={tab.tone} size={22} />
+                      {tab.label}
+                    </button>
+                  ))}
+              </div>
             ))}
-          </div>
-        )}
+          </nav>
 
-        <div
-          className={cn(
-            "overflow-y-auto px-10 py-9",
-            onBack ? "h-[527px]" : "h-[460px]"
-          )}
-        >
-          {children}
+          <div className="min-w-0 flex-1 overflow-y-auto bg-background px-9 py-8">
+            {children}
+          </div>
         </div>
       </div>
     </div>
