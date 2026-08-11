@@ -6,6 +6,7 @@ import {
   BookOpen,
   Keyboard,
   Mic,
+  ChevronLeft,
   Settings as SettingsIcon,
   Volume2,
   BrainCircuit,
@@ -42,7 +43,6 @@ import {
   Globe,
   MessageCircle,
   Asterisk,
-  Type,
   CircleCheck,
   ChevronDown,
   Building2,
@@ -165,6 +165,8 @@ type SettingDef = {
   group: string;
   kind: "switch" | "choice" | "languages";
   choices?: string[];
+  /** Org admins can pin this — editing shows a lock instead of a control. */
+  locked?: boolean;
 };
 
 /** Every setting is overridable by construction — which is what stops
@@ -177,8 +179,8 @@ const SETTING_DEFS: SettingDef[] = [
   { key: "autoSend", label: "Hold shift to auto-send", group: "Output", kind: "switch" },
   { key: "clipboard", label: "Clipboard behaviour", group: "Output", kind: "choice", choices: ["Default", "Preserve", "Skip"] },
   { key: "simulateKeypresses", label: "Simulate keypresses", group: "Output", kind: "switch" },
-  { key: "systemAudio", label: "Record from system audio", group: "Capture", kind: "switch" },
-  { key: "identifySpeakers", label: "Identify speakers", group: "Capture", kind: "switch" },
+  { key: "systemAudio", label: "Record from system audio", group: "Capture", kind: "switch", locked: true },
+  { key: "identifySpeakers", label: "Identify speakers", group: "Capture", kind: "switch", locked: true },
   { key: "playback", label: "Playback when recording", group: "Capture", kind: "choice", choices: ["Pause", "Mute", "Keep playing"] },
   { key: "saveAudio", label: "Save audio recordings", group: "Privacy", kind: "switch" },
   { key: "saveToHistory", label: "Save to history", group: "Privacy", kind: "switch" },
@@ -446,17 +448,15 @@ function useResolvedTheme(pref: ThemePref) {
   return systemDark ? "dark" : "light";
 }
 
-type DailyKey = "home" | "vocabulary";
+type DailyKey = "home" | "modes" | "vocabulary";
 type SettingsKey =
   | "account"
   | "billing"
   | "general"
-  | "dictation"
   | "shortcuts"
   | "sound"
   | "privacy"
-  | "models"
-  | "modes";
+  | "models";
 /**
  * How the signed-in account was provisioned. Not a user preference — it follows
  * from how they authenticated, so the app only reads it.
@@ -567,26 +567,18 @@ function AccountFixtureSwitcher({
     </div>
   );
 }
-type Subpage =
-  | { kind: "system" }
-  | { kind: "plans" }
+type Subpage = { kind: "system" } | { kind: "plans" } | null;
+
+/** Modes is its own nav-level flow now, not a Settings sub-page — this is
+ *  the equivalent of Subpage for the daily "Modes" tab. */
+type ModesSubpage =
   | { kind: "modeDetail"; modeId: string }
   | { kind: "superDetail" }
   | null;
 
-/** Where each overridable setting actually lives, so Super's summary can
- *  link out to the real editable field instead of duplicating it. */
-const TAB_BY_GROUP: Record<string, SettingsKey> = {
-  Language: "dictation",
-  Formatting: "dictation",
-  Output: "dictation",
-  Capture: "dictation",
-  Privacy: "privacy",
-  Models: "models",
-};
-
 const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
   { key: "home", label: "Home", icon: HomeIcon },
+  { key: "modes", label: "Modes", icon: Sparkles },
   { key: "vocabulary", label: "Dictionary", icon: BookOpen },
 ];
 
@@ -594,12 +586,10 @@ const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
   { key: "account", label: "Account", icon: CircleUser, group: 0 },
   { key: "billing", label: "Billing", icon: CreditCard, group: 0 },
   { key: "general", label: "General", icon: SettingsIcon, group: 1 },
-  { key: "dictation", label: "Dictation", icon: Type, group: 1 },
   { key: "shortcuts", label: "Shortcuts", icon: Keyboard, group: 1 },
   { key: "sound", label: "Sound", icon: Volume2, group: 1 },
   { key: "privacy", label: "Privacy", icon: Lock, group: 1 },
   { key: "models", label: "Models", icon: BrainCircuit, group: 2 },
-  { key: "modes", label: "Modes", icon: Sparkles, group: 2 },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -1657,8 +1647,10 @@ function DictionaryPanel() {
   );
 }
 
+/** Modes isn't here — it renders its own list/detail flow directly in the
+ *  workbench pane rather than a single stateless panel component. */
 const DAILY_PANELS: Record<
-  DailyKey,
+  Exclude<DailyKey, "modes">,
   (props: {
     onOpenModels: () => void;
     activeModeName: string;
@@ -1922,167 +1914,28 @@ function GearSwitch({ defaultChecked = false }: { defaultChecked?: boolean }) {
   );
 }
 
-function DictationPanel({
-  managed,
-  base,
-  onChange,
-}: {
-  managed: boolean;
-  base: BaseSettings;
-  onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
-}) {
-  /** Renders a base setting from the shared registry, so Dictation and a
-   *  mode's overrides can never drift apart. */
-  const row = (key: SettingKey, opts?: { description?: string; last?: boolean; locked?: boolean }) => {
-    const def = SETTING_DEFS.find((d) => d.key === key)!;
-    const control = (
-      <SettingControl
-        def={def}
-        value={base[key]}
-        onChange={(v) => onChange(key, v)}
-      />
-    );
-    return (
-      <SettingsRow
-        label={
-          <span>
-            {def.label}
-            <InfoDot />
-          </span>
-        }
-        description={opts?.description}
-        last={opts?.last}
-        control={
-          opts?.locked ? (
-            <PolicyLocked locked={managed}>{control}</PolicyLocked>
-          ) : (
-            control
-          )
-        }
-      />
-    );
-  };
-
-  return (
-    <div className="flex flex-col gap-8">
-      <PanelIntro
-        title="Dictation"
-        description="These are Super’s defaults — what applies whenever no mode says otherwise."
-      />
-
-      <SettingsSection
-        title="Language"
-        description="Name the languages you actually speak. Superwhisper picks between them per recording, which is more reliable than detecting across every language there is."
-      >
-        {row("languages", { last: true })}
-      </SettingsSection>
-
-      <SettingsSection
-        title="Formatting"
-        description="How your words are cleaned up before they land in the app."
-      >
-        {row("autocapitalize")}
-        {row("removeFillers", {
-          description: "Drops “um”, “eh”, and false starts.",
-          last: true,
-        })}
-      </SettingsSection>
-
-      <SettingsSection
-        title="Output"
-        description="Where the finished text goes and how it gets there."
-      >
-        {row("pasteResult")}
-        {row("autoSend")}
-        {row("clipboard")}
-        {row("simulateKeypresses", {
-          description: "For apps that don't accept a normal paste.",
-          last: true,
-        })}
-      </SettingsSection>
-
-      <SettingsSection
-        title="Capture"
-        description={
-          managed
-            ? "What Superwhisper listens to besides your microphone. Some options are set by your organization."
-            : "What Superwhisper listens to besides your microphone."
-        }
-      >
-        {row("systemAudio", { locked: true })}
-        {row("identifySpeakers", {
-          description: "Labels who said what in multi-person recordings.",
-          last: true,
-          locked: true,
-        })}
-      </SettingsSection>
-    </div>
-  );
-}
-
 /* -------------------------------------------------------------------------- */
 /*                              settings: Privacy                              */
 /* -------------------------------------------------------------------------- */
 
-function PrivacyPanel({
-  base,
-  onChange,
-  modes,
-}: {
-  base: BaseSettings;
-  onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
-  modes: ModeItem[];
-}) {
-  const excluded = modes.filter((m) => m.overrides.saveToHistory === false);
-
+/**
+ * Save audio / Save to history / Copy result to clipboard used to live
+ * here too, duplicating rows Super and every mode already own. Trimmed to
+ * the settings that are genuinely app-level — nothing here is overridable
+ * per mode, so this is the one place they can live.
+ */
+function PrivacyPanel() {
   return (
     <div className="flex flex-col gap-8">
+      <PanelIntro
+        title="Privacy"
+        description="Data handling that applies no matter which mode is active — the parts of dictation privacy a mode can't change."
+      />
+
       <SettingsSection
-        title="What gets kept"
-        description="Nothing is uploaded unless you pick a cloud model. These control what stays on this Mac afterwards."
+        title="History"
+        description="Nothing is uploaded unless you pick a cloud model. This controls how long the local record sticks around."
       >
-        <SettingsRow
-          label={
-            <span>
-              Save audio recordings
-              <InfoDot />
-            </span>
-          }
-          description={
-            base.saveAudio
-              ? "The original audio is kept alongside the transcript."
-              : "Off — only the text is kept, the audio is discarded."
-          }
-          control={
-            <Switch
-              size="sm"
-              checked={base.saveAudio}
-              onCheckedChange={(c) => onChange("saveAudio", c === true)}
-            />
-          }
-        />
-        <SettingsRow
-          label={
-            <span>
-              Save to history
-              <InfoDot />
-            </span>
-          }
-          description={
-            excluded.length > 0
-              ? `${excluded.length} mode${
-                  excluded.length === 1 ? "" : "s"
-                } override this (${excluded.map((m) => m.name).join(", ")})`
-              : "Any mode can override this to stay out of history."
-          }
-          control={
-            <Switch
-              size="sm"
-              checked={base.saveToHistory}
-              onCheckedChange={(c) => onChange("saveToHistory", c === true)}
-            />
-          }
-        />
         <SettingsRow
           label={
             <span>
@@ -2092,29 +1945,6 @@ function PrivacyPanel({
           }
           last
           control={<PopupButton value="Forever" />}
-        />
-      </SettingsSection>
-
-      <SettingsSection
-        title="Clipboard"
-        description="Superwhisper copies each result so you can paste it again."
-      >
-        <SettingsRow
-          label={
-            <span>
-              Copy result to clipboard
-              <InfoDot />
-            </span>
-          }
-          description="Turn off if a clipboard manager is picking up every dictation."
-          last
-          control={
-            <Switch
-              size="sm"
-              checked={base.copyToClipboard}
-              onCheckedChange={(c) => onChange("copyToClipboard", c === true)}
-            />
-          }
         />
       </SettingsSection>
 
@@ -2649,22 +2479,10 @@ function ModelsPanel() {
 
   return (
     <div className="flex flex-col gap-8">
-      <SettingsSection
-        title="In use"
-        description="What Super picks for you right now. You don't have to change any of this."
-      >
-        <SettingsRow
-          label="Voice model"
-          description="Turns your speech into raw text"
-          control={<PopupButton value="S1-Voice" />}
-        />
-        <SettingsRow
-          label="Language model"
-          description="Cleans up wording, punctuation and formatting"
-          last
-          control={<PopupButton value="Sonnet 4.5" />}
-        />
-      </SettingsSection>
+      <PanelIntro
+        title="Models"
+        description="Which voice and language model each mode uses is set on the mode itself — Super and every custom mode pick from this same library."
+      />
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
@@ -2888,21 +2706,18 @@ function SamplePreview({
 }
 
 /**
- * Super's page in the same shape as a mode's — one place to see and edit
- * everything it does. Editing here writes through the exact same `base`
- * state and `onChange` setter that Dictation / Privacy / Models use, so
- * it's a second door onto the one value, never a second copy of it — a
- * jump link there would show the identical control with the identical
- * value, just one navigation deeper.
+ * Super's page — the one place its settings live. There's no other tab
+ * these ever also appear on: Super IS the definition, not a summary of it,
+ * the same way a custom mode's overrides only ever live on that mode.
  */
 function SuperDetailPanel({
   base,
+  managed,
   onChange,
-  onJumpTo,
 }: {
   base: BaseSettings;
+  managed: boolean;
   onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
-  onJumpTo: (tab: SettingsKey) => void;
 }) {
   const groups = [...new Set(SETTING_DEFS.map((d) => d.group))];
 
@@ -2915,28 +2730,34 @@ function SuperDetailPanel({
 
       {groups.map((group) => (
         <SettingsSection key={group} title={group}>
-          {SETTING_DEFS.filter((d) => d.group === group).map((def, i, arr) => (
-            <SettingsRow
-              key={def.key}
-              label={def.label}
-              description={
-                <button
-                  onClick={() => onJumpTo(TAB_BY_GROUP[group])}
-                  className="text-muted-foreground/70 underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
-                >
-                  {group} settings →
-                </button>
-              }
-              last={i === arr.length - 1}
-              control={
-                <SettingControl
-                  def={def}
-                  value={base[def.key]}
-                  onChange={(v) => onChange(def.key, v)}
-                />
-              }
-            />
-          ))}
+          {SETTING_DEFS.filter((d) => d.group === group).map((def, i, arr) => {
+            const control = (
+              <SettingControl
+                def={def}
+                value={base[def.key]}
+                onChange={(v) => onChange(def.key, v)}
+              />
+            );
+            return (
+              <SettingsRow
+                key={def.key}
+                label={
+                  <span>
+                    {def.label}
+                    <InfoDot />
+                  </span>
+                }
+                last={i === arr.length - 1}
+                control={
+                  def.locked ? (
+                    <PolicyLocked locked={managed}>{control}</PolicyLocked>
+                  ) : (
+                    control
+                  )
+                }
+              />
+            );
+          })}
         </SettingsSection>
       ))}
     </div>
@@ -3796,6 +3617,8 @@ export default function SettingsPage() {
     ? SETTINGS_TABS
     : SETTINGS_TABS.filter((t) => t.key !== "billing");
   const [subpage, setSubpage] = useState<Subpage>(null);
+  /** Modes' own drill-down — lives in the daily pane now, not Settings. */
+  const [modesSubpage, setModesSubpage] = useState<ModesSubpage>(null);
   const [whatsNewItem, setWhatsNewItem] = useState<WhatsNewItem | null>(null);
   const [whatsNewStack, setWhatsNewStack] =
     useState<WhatsNewItem[]>(WHATS_NEW_SEED);
@@ -3867,7 +3690,8 @@ export default function SettingsPage() {
       prev.map((t) => (t.id === id ? { ...t, done: !t.done } : t)),
     );
 
-  const DailyPanel = DAILY_PANELS[active];
+  /** Only ever rendered when active !== "modes" — see the ternary below. */
+  const DailyPanel = DAILY_PANELS[active as Exclude<DailyKey, "modes">];
 
   const openWhatsNew = (item: WhatsNewItem) => {
     setWhatsNewItem(item);
@@ -3893,48 +3717,17 @@ export default function SettingsPage() {
       prev.map((m) => (m.id === id ? { ...m, instructions } : m))
     );
 
-  const detailMode =
-    subpage?.kind === "modeDetail"
-      ? modes.find((m) => m.id === subpage.modeId)
-      : undefined;
-
-  // Which pane the settings window shows, plus its back target.
+  // Which pane the Settings modal shows, plus its back target. Modes left
+  // this modal entirely — system/plans are the only sub-pages left here.
   let settingsBody: React.ReactNode;
   let onBack: (() => void) | undefined;
-  const paneKey = subpage
-    ? subpage.kind === "modeDetail"
-      ? `mode:${subpage.modeId}`
-      : subpage.kind
-    : settingsTab;
+  const paneKey = subpage ? subpage.kind : settingsTab;
 
   if (subpage?.kind === "system") {
     settingsBody = <SystemPanel />;
     onBack = () => setSubpage(null);
   } else if (subpage?.kind === "plans") {
     settingsBody = <PlansPanel />;
-    onBack = () => setSubpage(null);
-  } else if (subpage?.kind === "superDetail") {
-    settingsBody = (
-      <SuperDetailPanel
-        base={base}
-        onChange={setBaseValue}
-        onJumpTo={(tab) => {
-          setSubpage(null);
-          setSettingsTab(tab);
-        }}
-      />
-    );
-    onBack = () => setSubpage(null);
-  } else if (detailMode) {
-    settingsBody = (
-      <ModeDetailPanel
-        mode={detailMode}
-        base={base}
-        onSetOverride={(k, v) => setOverride(detailMode.id, k, v)}
-        onClearOverride={(k) => clearOverride(detailMode.id, k)}
-        onSetInstructions={(v) => setModeInstructions(detailMode.id, v)}
-      />
-    );
     onBack = () => setSubpage(null);
   } else {
     settingsBody =
@@ -3951,26 +3744,56 @@ export default function SettingsPage() {
           theme={theme}
           setTheme={setTheme}
         />
-      ) : settingsTab === "dictation" ? (
-        <DictationPanel managed={isManaged} base={base} onChange={setBaseValue} />
       ) : settingsTab === "shortcuts" ? (
         <ShortcutsPanel />
       ) : settingsTab === "privacy" ? (
-        <PrivacyPanel base={base} onChange={setBaseValue} modes={modes} />
+        <PrivacyPanel />
       ) : settingsTab === "sound" ? (
         <SoundPanel mics={mics} onReorderMics={reorderMics} />
-      ) : settingsTab === "models" ? (
-        <ModelsPanel />
       ) : (
-        <ModesPanel
-          modes={modes}
-          base={base}
-          onOpenMode={(id) => setSubpage({ kind: "modeDetail", modeId: id })}
-          onOpenSuper={() => setSubpage({ kind: "superDetail" })}
-          onToggleMode={toggleMode}
-          onRename={renameMode}
-        />
+        <ModelsPanel />
       );
+  }
+
+  // The daily "Modes" pane's own drill-down, rendered in the workbench
+  // pane rather than the Settings modal — same data, same handlers
+  // ModeDetailPanel/SuperDetailPanel always used, just a different host.
+  const modesDetailMode =
+    modesSubpage?.kind === "modeDetail"
+      ? modes.find((m) => m.id === modesSubpage.modeId)
+      : undefined;
+
+  let modesBody: React.ReactNode;
+  const modesPaneKey =
+    modesSubpage?.kind === "modeDetail"
+      ? `mode:${modesSubpage.modeId}`
+      : (modesSubpage?.kind ?? "list");
+
+  if (modesSubpage?.kind === "superDetail") {
+    modesBody = (
+      <SuperDetailPanel base={base} managed={isManaged} onChange={setBaseValue} />
+    );
+  } else if (modesDetailMode) {
+    modesBody = (
+      <ModeDetailPanel
+        mode={modesDetailMode}
+        base={base}
+        onSetOverride={(k, v) => setOverride(modesDetailMode.id, k, v)}
+        onClearOverride={(k) => clearOverride(modesDetailMode.id, k)}
+        onSetInstructions={(v) => setModeInstructions(modesDetailMode.id, v)}
+      />
+    );
+  } else {
+    modesBody = (
+      <ModesPanel
+        modes={modes}
+        base={base}
+        onOpenMode={(id) => setModesSubpage({ kind: "modeDetail", modeId: id })}
+        onOpenSuper={() => setModesSubpage({ kind: "superDetail" })}
+        onToggleMode={toggleMode}
+        onRename={renameMode}
+      />
+    );
   }
 
   return (
@@ -3989,7 +3812,10 @@ export default function SettingsPage() {
         <div className="flex min-h-0 flex-1 gap-2 p-2">
           <DailyNav
             active={active}
-            onSelect={setActive}
+            onSelect={(key) => {
+              setActive(key);
+              if (key === "modes") setModesSubpage(null);
+            }}
             onOpenSettings={() => openSettingsAt("general")}
             onOpenAccount={() => openSettingsAt("account")}
             whatsNew={whatsNewStack}
@@ -4002,11 +3828,29 @@ export default function SettingsPage() {
                 chrome. It starts at the top of the window rather than below a
                 title strip — the sidebar absorbs the traffic lights instead. */}
             <div className="hairline min-h-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-14 py-12">
-              <div className="mx-auto flex w-full max-w-[720px] flex-col gap-8">
-                <DailyPanel
-                  onOpenModels={() => openSettingsAt("models")}
-                  activeModeName={activeMode?.name ?? "Super"}
-                />
+              <div
+                key={active === "modes" ? modesPaneKey : active}
+                className="mx-auto flex w-full max-w-[720px] flex-col gap-8"
+              >
+                {active === "modes" ? (
+                  <>
+                    {modesSubpage && (
+                      <button
+                        onClick={() => setModesSubpage(null)}
+                        className="-ml-1 -mb-4 flex w-fit items-center gap-0.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+                      >
+                        <ChevronLeft className="h-4 w-4" strokeWidth={2} />
+                        Back
+                      </button>
+                    )}
+                    {modesBody}
+                  </>
+                ) : (
+                  <DailyPanel
+                    onOpenModels={() => openSettingsAt("models")}
+                    activeModeName={activeMode?.name ?? "Super"}
+                  />
+                )}
               </div>
             </div>
 
@@ -4068,7 +3912,10 @@ export default function SettingsPage() {
             override={modeOverride}
             autoMode={autoMode}
             onPick={setModeOverride}
-            onOpenSettings={() => openSettingsAt("modes")}
+            onOpenSettings={() => {
+              setActive("modes");
+              setModesSubpage(null);
+            }}
             onClose={() => setModeMenuOpen(false)}
           />
         )}
