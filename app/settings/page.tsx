@@ -2879,14 +2879,12 @@ function ModesPanel({
   base,
   onOpenMode,
   onOpenSuper,
-  onToggleMode,
   onRename,
 }: {
   modes: ModeItem[];
   base: BaseSettings;
   onOpenMode: (id: string) => void;
   onOpenSuper: () => void;
-  onToggleMode: (id: string, enabled: boolean) => void;
   onRename: (id: string, name: string) => void;
 }) {
   const on = modes.filter((m) => m.enabled).length;
@@ -2943,22 +2941,26 @@ function ModesPanel({
             return (
               <div
                 key={mode.id}
-                className={cn(
-                  "hairline flex items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-opacity",
-                  !mode.enabled && "opacity-55"
-                )}
+                onClick={() => onOpenMode(mode.id)}
+                className="hairline flex cursor-pointer items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-colors hover:bg-fill"
               >
-                <Switch
-                  size="sm"
-                  checked={mode.enabled}
-                  onCheckedChange={(c) => onToggleMode(mode.id, c === true)}
-                />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-[14px] font-medium text-foreground">
-                    <InlineEdit
-                      value={mode.name}
-                      onChange={(name) => onRename(mode.id, name)}
-                    />
+                  <span className="flex items-center gap-1.5 text-[14px] font-medium text-foreground">
+                    <span
+                      onClick={(e) => e.stopPropagation()}
+                      className="min-w-0"
+                    >
+                      <InlineEdit
+                        value={mode.name}
+                        onChange={(name) => onRename(mode.id, name)}
+                        className="whitespace-nowrap"
+                      />
+                    </span>
+                    {!mode.enabled && (
+                      <span className="shrink-0 rounded-[4px] bg-fill-strong px-1.5 py-px text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                        Off
+                      </span>
+                    )}
                   </span>
                   <span className="truncate text-[13px] text-muted-foreground">
                     {mode.apps.join(", ")} · {count}{" "}
@@ -2968,13 +2970,10 @@ function ModesPanel({
                     {renderSample(resolveMode(base, mode))}
                   </span>
                 </div>
-                <button
-                  onClick={() => onOpenMode(mode.id)}
-                  aria-label={`Open ${mode.name}`}
-                  className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-                >
-                  <ChevronRight className="h-4 w-4" strokeWidth={2} />
-                </button>
+                <ChevronRight
+                  className="h-4 w-4 shrink-0 text-muted-foreground"
+                  strokeWidth={2}
+                />
               </div>
             );
           })}
@@ -3092,12 +3091,14 @@ function ModeDetailPanel({
   onSetOverride,
   onClearOverride,
   onSetInstructions,
+  onToggleMode,
 }: {
   mode: ModeItem;
   base: BaseSettings;
   onSetOverride: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
   onClearOverride: (key: SettingKey) => void;
   onSetInstructions: (value: string) => void;
+  onToggleMode: (enabled: boolean) => void;
 }) {
   const [picking, setPicking] = useState(false);
 
@@ -3111,19 +3112,31 @@ function ModeDetailPanel({
 
   return (
     <div className="flex flex-col gap-8">
-      <PanelIntro
-        title={mode.name}
-        description={
-          overridden.length === 0 ? (
-            <>Follows Super — nothing overridden yet.</>
-          ) : (
-            <>
-              Overrides {overridden.length}{" "}
-              {overridden.length === 1 ? "setting" : "settings"}.
-            </>
-          )
-        }
-      />
+      <div className="flex items-start justify-between gap-4">
+        <PanelIntro
+          title={mode.name}
+          description={
+            overridden.length === 0 ? (
+              <>Follows Super — nothing overridden yet.</>
+            ) : (
+              <>
+                Overrides {overridden.length}{" "}
+                {overridden.length === 1 ? "setting" : "settings"}.
+              </>
+            )
+          }
+        />
+        <label className="flex shrink-0 items-center gap-2 pt-0.5">
+          <span className="text-[13px] font-medium text-muted-foreground">
+            Auto
+          </span>
+          <Switch
+            size="sm"
+            checked={mode.enabled}
+            onCheckedChange={(c) => onToggleMode(c === true)}
+          />
+        </label>
+      </div>
 
       <SamplePreview base={base} mode={mode} />
 
@@ -3888,6 +3901,7 @@ export default function SettingsPage() {
         onSetOverride={(k, v) => setOverride(modesDetailMode.id, k, v)}
         onClearOverride={(k) => clearOverride(modesDetailMode.id, k)}
         onSetInstructions={(v) => setModeInstructions(modesDetailMode.id, v)}
+        onToggleMode={(enabled) => toggleMode(modesDetailMode.id, enabled)}
       />
     );
   } else {
@@ -3897,7 +3911,6 @@ export default function SettingsPage() {
         base={base}
         onOpenMode={(id) => setModesSubpage({ kind: "modeDetail", modeId: id })}
         onOpenSuper={() => setModesSubpage({ kind: "superDetail" })}
-        onToggleMode={toggleMode}
         onRename={renameMode}
       />
     );
