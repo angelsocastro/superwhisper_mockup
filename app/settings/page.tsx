@@ -197,6 +197,9 @@ type ModeItem = {
   id: string;
   name: string;
   apps: string[];
+  /** What the mode actually asks the language model to do. The core
+   *  identity of a mode — the rest are overrides on top of it. */
+  instructions: string;
   /** Only what this mode changes. Anything absent follows Super. */
   overrides: Partial<BaseSettings>;
   /** Ships configured and switched off — you enable it, you don't build it. */
@@ -210,6 +213,8 @@ const MODES_SEED: ModeItem[] = [
     id: "personal",
     name: "Personal messages",
     apps: ["WhatsApp", "Telegram", "Messages"],
+    instructions:
+      "Keep it casual and short. Use contractions. No corporate tone.",
     overrides: { autocapitalize: false, autoSend: true },
     enabled: true,
     builtIn: true,
@@ -218,6 +223,8 @@ const MODES_SEED: ModeItem[] = [
     id: "work",
     name: "Work messages",
     apps: ["Slack", "Teams"],
+    instructions:
+      "Professional but friendly. Fix grammar. Keep it as brief as Slack messages usually are.",
     overrides: { languages: ["English"] },
     enabled: true,
     builtIn: true,
@@ -226,6 +233,8 @@ const MODES_SEED: ModeItem[] = [
     id: "email",
     name: "Email",
     apps: ["Mail", "Spark"],
+    instructions:
+      "Format as a proper email. Fix grammar and punctuation. Remove filler words like \"um\" and \"uh\".",
     overrides: { languages: ["English"], removeFillers: true },
     enabled: false,
     builtIn: true,
@@ -234,6 +243,8 @@ const MODES_SEED: ModeItem[] = [
     id: "meetings",
     name: "Meetings",
     apps: ["Zoom"],
+    instructions:
+      "Summarize the key points as short bullet points. Keep names and action items exact.",
     overrides: {
       systemAudio: true,
       identifySpeakers: true,
@@ -3144,16 +3155,23 @@ function ModeDetailPanel({
   base,
   onSetOverride,
   onClearOverride,
+  onSetInstructions,
 }: {
   mode: ModeItem;
   base: BaseSettings;
   onSetOverride: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
   onClearOverride: (key: SettingKey) => void;
+  onSetInstructions: (value: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
 
   const overridden = SETTING_DEFS.filter((d) => d.key in mode.overrides);
   const available = SETTING_DEFS.filter((d) => !(d.key in mode.overrides));
+
+  /** Collapsed for a fresh mode with nothing overridden yet — expanded by
+   *  default the moment there's actually something advanced to see, so
+   *  existing customization is never hidden behind a click. */
+  const [advancedOpen, setAdvancedOpen] = useState(overridden.length > 0);
 
   return (
     <div className="flex flex-col gap-8">
@@ -3174,115 +3192,167 @@ function ModeDetailPanel({
 
       <SamplePreview base={base} mode={mode} />
 
+      {/* Tier 1 — what makes this mode this mode. Always visible: this is
+          the minimum needed to create a useful mode, matching how little
+          VoiceInk asks for to run the same prompt+auto-switch mechanism. */}
       <section className="flex flex-col gap-4">
-        <h2 className="text-[15px] font-semibold text-foreground">
-          Overriding
-        </h2>
+        <div className="flex flex-col gap-1.5">
+          <label
+            htmlFor="mode-instructions"
+            className="text-[13px] font-medium text-foreground"
+          >
+            Custom instructions
+          </label>
+          <textarea
+            id="mode-instructions"
+            value={mode.instructions}
+            onChange={(e) => onSetInstructions(e.target.value)}
+            rows={3}
+            placeholder="Adjust the transcript to your style using natural language."
+            className="hairline min-h-[76px] resize-y rounded-[8px] bg-card px-3 py-2.5 text-[13px] leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
+          />
+        </div>
 
-        {overridden.length > 0 && (
-          <div className="hairline overflow-hidden rounded-[10px] bg-card">
-            {overridden.map((def, i) => (
-              <SettingsRow
-                key={def.key}
-                label={def.label}
-                description={`${def.group} · Super uses ${formatSettingValue(
-                  base[def.key]
-                )}`}
-                last={i === overridden.length - 1}
-                control={
-                  <div className="flex items-center gap-2">
-                    <SettingControl
-                      def={def}
-                      value={mode.overrides[def.key] as BaseSettings[SettingKey]}
-                      onChange={(v) => onSetOverride(def.key, v)}
-                    />
-                    <button
-                      onClick={() => onClearOverride(def.key)}
-                      aria-label={`Reset ${def.label}`}
-                      title="Follow Super again"
-                      className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
-                    >
-                      <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
-                    </button>
-                  </div>
-                }
-              />
-            ))}
-          </div>
-        )}
-
-        {picking ? (
-          <div className="hairline flex flex-col gap-3 rounded-[10px] bg-card p-3">
-            {[...new Set(available.map((d) => d.group))].map((group) => (
-              <div key={group} className="flex flex-col gap-1">
-                <span className="px-1 text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
-                  {group}
-                </span>
-                {available
-                  .filter((d) => d.group === group)
-                  .map((def) => (
-                    <button
-                      key={def.key}
-                      onClick={() => {
-                        const current = base[def.key];
-                        onSetOverride(
-                          def.key,
-                          typeof current === "boolean" ? !current : current
-                        );
-                        setPicking(false);
-                      }}
-                      className="flex items-center justify-between rounded-[6px] px-1.5 py-1 text-left transition-colors hover:bg-fill-hover"
-                    >
-                      <span className="text-[13px] text-foreground">
-                        {def.label}
-                      </span>
-                      <span className="text-[12px] text-muted-foreground">
-                        {formatSettingValue(base[def.key])}
-                      </span>
-                    </button>
-                  ))}
-              </div>
-            ))}
-            <button
-              onClick={() => setPicking(false)}
-              className="self-start px-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground"
-            >
-              Cancel
-            </button>
-          </div>
-        ) : (
-          available.length > 0 && (
-            <GhostButton onClick={() => setPicking(true)}>
-              + Add an override
-            </GhostButton>
-          )
-        )}
+        <div className="hairline overflow-hidden rounded-[10px] bg-card">
+          <SettingsRow
+            label={
+              <span>
+                Activate for apps
+                <InfoDot />
+              </span>
+            }
+            description={
+              mode.apps.length > 0 ? mode.apps.join(", ") : undefined
+            }
+            last
+            control={<GhostButton>Add apps and sites</GhostButton>}
+          />
+        </div>
       </section>
 
-      <SettingsSection title="Activation">
-        <SettingsRow
-          label={
-            <span>
-              Activate for apps
-              <InfoDot />
+      {/* Tier 2 — model, context, and capture overrides plus the per-mode
+          shortcut. All of this already lives on the mode itself (never
+          scattered to Dictation/Privacy/Models — those hold Super's own
+          copy, this holds the diff), just collapsed until there's a reason
+          to look: most modes only ever need Tier 1. */}
+      <section className="flex flex-col gap-3">
+        <button
+          onClick={() => setAdvancedOpen((v) => !v)}
+          className="flex items-center gap-1.5 self-start text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+        >
+          <ChevronRight
+            className={cn(
+              "h-3.5 w-3.5 transition-transform",
+              advancedOpen && "rotate-90",
+            )}
+            strokeWidth={2.5}
+          />
+          Advanced settings
+          {!advancedOpen && overridden.length > 0 && (
+            <span className="font-normal text-muted-foreground/70">
+              · {overridden.length} active
             </span>
-          }
-          description={
-            mode.apps.length > 0 ? mode.apps.join(", ") : undefined
-          }
-          control={<GhostButton>Add apps and sites</GhostButton>}
-        />
-        <SettingsRow
-          label="Keyboard shortcut"
-          description="Start a recording in this mode"
-          last
-          control={
-            <span className="text-[12px] text-muted-foreground/60">
-              Record shortcut
-            </span>
-          }
-        />
-      </SettingsSection>
+          )}
+        </button>
+
+        {advancedOpen && (
+          <div className="flex flex-col gap-4 pl-1">
+            <div className="hairline overflow-hidden rounded-[10px] bg-card">
+              <SettingsRow
+                label="Keyboard shortcut"
+                description="Start a recording in this mode"
+                last
+                control={
+                  <span className="text-[12px] text-muted-foreground/60">
+                    Record shortcut
+                  </span>
+                }
+              />
+            </div>
+
+            {overridden.length > 0 && (
+              <div className="hairline overflow-hidden rounded-[10px] bg-card">
+                {overridden.map((def, i) => (
+                  <SettingsRow
+                    key={def.key}
+                    label={def.label}
+                    description={`${def.group} · Super uses ${formatSettingValue(
+                      base[def.key]
+                    )}`}
+                    last={i === overridden.length - 1}
+                    control={
+                      <div className="flex items-center gap-2">
+                        <SettingControl
+                          def={def}
+                          value={
+                            mode.overrides[def.key] as BaseSettings[SettingKey]
+                          }
+                          onChange={(v) => onSetOverride(def.key, v)}
+                        />
+                        <button
+                          onClick={() => onClearOverride(def.key)}
+                          aria-label={`Reset ${def.label}`}
+                          title="Follow Super again"
+                          className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-muted-foreground/70 transition-colors hover:bg-fill-hover hover:text-foreground"
+                        >
+                          <RotateCcw className="h-3.5 w-3.5" strokeWidth={2} />
+                        </button>
+                      </div>
+                    }
+                  />
+                ))}
+              </div>
+            )}
+
+            {picking ? (
+              <div className="hairline flex flex-col gap-3 rounded-[10px] bg-card p-3">
+                {[...new Set(available.map((d) => d.group))].map((group) => (
+                  <div key={group} className="flex flex-col gap-1">
+                    <span className="px-1 text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+                      {group}
+                    </span>
+                    {available
+                      .filter((d) => d.group === group)
+                      .map((def) => (
+                        <button
+                          key={def.key}
+                          onClick={() => {
+                            const current = base[def.key];
+                            onSetOverride(
+                              def.key,
+                              typeof current === "boolean" ? !current : current
+                            );
+                            setPicking(false);
+                          }}
+                          className="flex items-center justify-between rounded-[6px] px-1.5 py-1 text-left transition-colors hover:bg-fill-hover"
+                        >
+                          <span className="text-[13px] text-foreground">
+                            {def.label}
+                          </span>
+                          <span className="text-[12px] text-muted-foreground">
+                            {formatSettingValue(base[def.key])}
+                          </span>
+                        </button>
+                      ))}
+                  </div>
+                ))}
+                <button
+                  onClick={() => setPicking(false)}
+                  className="self-start px-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Cancel
+                </button>
+              </div>
+            ) : (
+              available.length > 0 && (
+                <GhostButton onClick={() => setPicking(true)}>
+                  + Add an override
+                </GhostButton>
+              )
+            )}
+          </div>
+        )}
+      </section>
 
       <div className="hairline overflow-hidden rounded-[10px] bg-card">
         <SettingsRow
@@ -3811,6 +3881,11 @@ export default function SettingsPage() {
   const renameMode = (id: string, name: string) =>
     setModes((prev) => prev.map((m) => (m.id === id ? { ...m, name } : m)));
 
+  const setModeInstructions = (id: string, instructions: string) =>
+    setModes((prev) =>
+      prev.map((m) => (m.id === id ? { ...m, instructions } : m))
+    );
+
   const detailMode =
     subpage?.kind === "modeDetail"
       ? modes.find((m) => m.id === subpage.modeId)
@@ -3849,6 +3924,7 @@ export default function SettingsPage() {
         base={base}
         onSetOverride={(k, v) => setOverride(detailMode.id, k, v)}
         onClearOverride={(k) => clearOverride(detailMode.id, k)}
+        onSetInstructions={(v) => setModeInstructions(detailMode.id, v)}
       />
     );
     onBack = () => setSubpage(null);
