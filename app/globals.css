@@ -241,6 +241,13 @@
     box-shadow: inset 0.5px 0 0 0 var(--hairline-c);
   }
 
+  /* A quieter ring for large surfaces that just need to read as a
+   * boundary, not a drawn line — reuses --line, already fainter than
+   * --hairline-c. */
+  .hairline-faint {
+    box-shadow: 0 0 0 0.5px var(--line);
+  }
+
   /* Elevation: hairline ring + cast shadow in one declaration, so every
    * floating surface at a given tier reads consistently in both themes
    * instead of each component hand-tuning its own shadow. */

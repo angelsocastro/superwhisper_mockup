@@ -3926,7 +3926,7 @@ export default function SettingsPage() {
         onChange={setAccountFixture}
       />
 
-      <MacWindow width="1020px" height="700px">
+      <MacWindow width="1120px" height="760px">
         <div className="flex min-h-0 flex-1 gap-2 p-2">
           <DailyNav
             active={active}
@@ -3945,7 +3945,7 @@ export default function SettingsPage() {
             {/* Workbench pane: bordered on all sides and floating in the
                 chrome. It starts at the top of the window rather than below a
                 title strip — the sidebar absorbs the traffic lights instead. */}
-            <div className="hairline min-h-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-14 py-12">
+            <div className="hairline-faint min-h-0 flex-1 overflow-y-auto rounded-[10px] bg-background px-16 py-14">
               <div
                 key={active === "modes" ? modesPaneKey : active}
                 className="mx-auto flex w-full max-w-[720px] flex-col gap-8"
