@@ -3248,7 +3248,13 @@ function ModeDetailPanel({
 }) {
   const [picking, setPicking] = useState(false);
 
-  const overridden = SETTING_DEFS.filter((d) => d.key in mode.overrides);
+  /** In the order each was added, not SETTING_DEFS' fixed order — a newly
+   *  added override belongs at the bottom, not wherever its group happens
+   *  to fall. Object key order follows insertion order in JS, so this is
+   *  just reading it off mode.overrides directly. */
+  const overridden = (Object.keys(mode.overrides) as SettingKey[])
+    .map((key) => SETTING_DEFS.find((d) => d.key === key)!)
+    .filter(Boolean);
   const available = SETTING_DEFS.filter((d) => !(d.key in mode.overrides));
 
   return (
