@@ -119,14 +119,20 @@ export default function OnboardingPage() {
   const current: Step = STEPS[step];
 
   return (
-    <main className="dark flex min-h-screen items-center justify-center bg-[#0b0c0e] p-6">
+    <main className="dark flex min-h-screen items-center justify-center bg-[#020203] p-6">
       <div
         className={cn(
-          "relative flex w-[520px] flex-col gap-7 overflow-hidden rounded-[20px] border border-white/10 bg-[#1b1c1f] px-9 pt-7 pb-8 shadow-[0_60px_120px_-30px_rgb(0_0_0/0.9)]",
+          "relative flex w-[520px] flex-col gap-7 overflow-hidden rounded-[20px] border px-9 pt-7 pb-8 shadow-[0_70px_140px_-30px_rgb(0_0_0/0.95)]",
+          current === "welcome"
+            ? "border-white/[0.08]"
+            : "border-white/[0.06] bg-[#09090b]",
         )}
       >
-        <ProgressBar step={step} />
-        <AmbientWaveform />
+        {current === "welcome" && <WelcomeDrape />}
+
+        <div className="relative flex flex-col gap-7">
+          <ProgressBar step={step} />
+          <AmbientWaveform />
 
         {current === "welcome" && (
           <div className="relative flex flex-col items-center gap-4 py-10 text-center">
@@ -322,6 +328,7 @@ export default function OnboardingPage() {
             </Link>
           </div>
         )}
+        </div>
       </div>
     </main>
   );
@@ -399,5 +406,37 @@ function ModelStep({ onNext }: { onNext: () => void }) {
 
       <PrimaryButton onClick={onNext}>Continue</PrimaryButton>
     </div>
+  );
+}
+
+/** Folded black silk/carbon catching hard light — sharp creases, not a
+ *  soft gradient blob, matching the real Welcome screen's photographic
+ *  backdrop. Two conic-gradients (folds fanning from two off-canvas
+ *  points) instead of one flat glow. */
+function WelcomeDrape() {
+  return (
+    <div
+      className="pointer-events-none absolute inset-0"
+      style={{
+        background: [
+          "conic-gradient(from 205deg at 12% -15%," +
+            "transparent 0deg, transparent 5deg," +
+            "rgba(255,255,255,0.14) 6.5deg, rgba(255,255,255,0.14) 8.5deg," +
+            "transparent 10deg, transparent 27deg," +
+            "rgba(255,255,255,0.22) 28.5deg, rgba(255,255,255,0.22) 31.5deg," +
+            "transparent 33deg, transparent 57deg," +
+            "rgba(210,216,226,0.16) 58.5deg, rgba(210,216,226,0.16) 62deg," +
+            "transparent 63.5deg, transparent 360deg)",
+          "conic-gradient(from 30deg at 92% 118%," +
+            "transparent 0deg, transparent 9deg," +
+            "rgba(255,255,255,0.11) 10.5deg, rgba(255,255,255,0.11) 13deg," +
+            "transparent 14.5deg, transparent 39deg," +
+            "rgba(255,255,255,0.18) 40.5deg, rgba(255,255,255,0.18) 43.5deg," +
+            "transparent 45deg, transparent 360deg)",
+          "radial-gradient(130% 100% at 50% 10%, rgba(35,37,42,0.7), transparent 65%)",
+          "#050506",
+        ].join(", "),
+      }}
+    />
   );
 }
