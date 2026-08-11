@@ -23,13 +23,49 @@ function detectLanguage(): string {
   return LOCALE_TO_LANGUAGE[prefix] ?? "English";
 }
 
+/** Segments, not a smooth fill — each tick is a real step, so the bar
+ *  also answers "how many are left," not just "how far along." */
 function ProgressBar({ step }: { step: number }) {
   return (
-    <div className="h-[3px] w-full overflow-hidden rounded-full bg-white/10">
-      <div
-        className="h-full rounded-full bg-[#58a6ff] transition-[width] duration-300 ease-out"
-        style={{ width: `${((step + 1) / STEPS.length) * 100}%` }}
-      />
+    <div className="flex w-full gap-1.5">
+      {STEPS.map((s, i) => (
+        <div key={s} className="h-[3px] flex-1 overflow-hidden rounded-full bg-white/10">
+          <div
+            className={cn(
+              "h-full rounded-full transition-colors duration-300",
+              i <= step ? "bg-[var(--primary)]" : "bg-transparent",
+            )}
+          />
+        </div>
+      ))}
+    </div>
+  );
+}
+
+/** The signature: a quiet bar of "listening" that runs through every step,
+ *  not just a one-off decoration on Welcome — the one thing true about
+ *  Superwhisper on every screen is that it's built to hear you. */
+function AmbientWaveform() {
+  const heights = [5, 9, 4, 12, 7, 10, 3, 8, 11, 5, 9, 4, 7, 10, 5, 8, 4, 9, 6, 8, 3, 7, 11, 5, 8, 4, 9, 6, 10, 5];
+  return (
+    <div className="flex h-5 items-end justify-center gap-[3px]" aria-hidden="true">
+      {heights.map((h, i) => (
+        <span
+          key={i}
+          className="w-[2.5px] shrink-0 rounded-full bg-[var(--primary)] motion-safe:animate-[ob-wave_2.6s_ease-in-out_infinite]"
+          style={{
+            height: h,
+            opacity: 0.22 + (i % 5) * 0.06,
+            animationDelay: `${i * 0.06}s`,
+          }}
+        />
+      ))}
+      <style>{`
+        @keyframes ob-wave {
+          0%, 100% { transform: scaleY(0.55); }
+          50% { transform: scaleY(1); }
+        }
+      `}</style>
     </div>
   );
 }
@@ -44,7 +80,7 @@ function PrimaryButton({
   return (
     <button
       onClick={onClick}
-      className="w-full rounded-[12px] bg-[#58a6ff] py-3.5 text-[15px] font-semibold text-[#0a1622] transition-colors hover:bg-[#7ab8ff]"
+      className="w-full rounded-[12px] bg-[var(--primary)] py-3.5 text-[15px] font-semibold text-[#0a1622] transition-colors hover:bg-[var(--primary-hover)]"
     >
       {children}
     </button>
@@ -89,9 +125,8 @@ export default function OnboardingPage() {
           "relative flex w-[520px] flex-col gap-7 overflow-hidden rounded-[20px] border border-white/10 bg-[#1b1c1f] px-9 pt-7 pb-8 shadow-[0_60px_120px_-30px_rgb(0_0_0/0.9)]",
         )}
       >
-        {current === "welcome" && <WelcomeSwirl />}
-
         <ProgressBar step={step} />
+        <AmbientWaveform />
 
         {current === "welcome" && (
           <div className="relative flex flex-col items-center gap-4 py-10 text-center">
@@ -128,7 +163,7 @@ export default function OnboardingPage() {
             </div>
 
             {detected && (
-              <div className="flex items-center gap-2 rounded-[10px] border border-[#58a6ff]/25 bg-[#58a6ff]/10 px-3.5 py-2.5 text-[13px] text-[#9cc9ff]">
+              <div className="flex items-center gap-2 rounded-[10px] border border-[var(--primary)]/25 bg-[var(--primary)]/10 px-3.5 py-2.5 text-[13px] text-[color:var(--primary-tint)]">
                 <FlagIcon lang={detected} size={16} />
                 Detected from your Mac: {detected}. Add more below if you
                 mix languages.
@@ -145,7 +180,7 @@ export default function OnboardingPage() {
                     className={cn(
                       "flex items-center gap-2 rounded-[10px] border px-3 py-2.5 text-left text-[13px] font-medium transition-colors",
                       checked
-                        ? "border-[#58a6ff]/50 bg-[#58a6ff]/10 text-white"
+                        ? "border-[var(--primary)]/50 bg-[var(--primary)]/10 text-white"
                         : "border-white/10 bg-white/[0.03] text-white/70 hover:bg-white/[0.06]",
                     )}
                   >
@@ -153,7 +188,7 @@ export default function OnboardingPage() {
                     <span className="min-w-0 flex-1 truncate">{lang}</span>
                     {checked && (
                       <Check
-                        className="h-3.5 w-3.5 shrink-0 text-[#58a6ff]"
+                        className="h-3.5 w-3.5 shrink-0 text-[var(--primary)]"
                         strokeWidth={2.5}
                       />
                     )}
@@ -172,14 +207,14 @@ export default function OnboardingPage() {
               <h1 className="text-[22px] font-bold text-white">
                 Let&rsquo;s set up permissions
               </h1>
-              <button className="w-fit text-[13px] font-medium text-[#58a6ff] hover:underline">
+              <button className="w-fit text-[13px] font-medium text-[var(--primary)] hover:underline">
                 Learn how privacy is at the heart of Superwhisper ›
               </button>
             </div>
 
             <div className="flex flex-col divide-y divide-white/10 rounded-[12px] border border-white/10">
               <div className="flex items-center gap-3.5 px-4 py-4">
-                <Mic className="h-5 w-5 shrink-0 text-[#58a6ff]" strokeWidth={2} />
+                <Mic className="h-5 w-5 shrink-0 text-[var(--primary)]" strokeWidth={2} />
                 <div className="flex-1">
                   <p className="text-[14px] font-semibold text-white">
                     Allow Microphone Access
@@ -270,8 +305,8 @@ export default function OnboardingPage() {
 
         {current === "done" && (
           <div className="flex flex-col items-center gap-4 py-10 text-center">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[#58a6ff]/15">
-              <Check className="h-6 w-6 text-[#58a6ff]" strokeWidth={2.5} />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[var(--primary)]/15">
+              <Check className="h-6 w-6 text-[var(--primary)]" strokeWidth={2.5} />
             </div>
             <h1 className="text-[22px] font-bold text-white">
               You&rsquo;re all set
@@ -281,7 +316,7 @@ export default function OnboardingPage() {
               Modes → Super.
             </p>
             <Link href="/settings" className="mt-4 w-full">
-              <span className="block w-full rounded-[12px] bg-[#58a6ff] py-3.5 text-center text-[15px] font-semibold text-[#0a1622] transition-colors hover:bg-[#7ab8ff]">
+              <span className="block w-full rounded-[12px] bg-[var(--primary)] py-3.5 text-center text-[15px] font-semibold text-[#0a1622] transition-colors hover:bg-[var(--primary-hover)]">
                 Open Superwhisper
               </span>
             </Link>
@@ -304,7 +339,7 @@ function ModelStep({ onNext }: { onNext: () => void }) {
           Faster performance with internet connection required. Your
           recordings go to the cloud to process but are never stored there.
         </p>
-        <button className="w-fit text-[13px] font-medium text-[#58a6ff] hover:underline">
+        <button className="w-fit text-[13px] font-medium text-[var(--primary)] hover:underline">
           Learn how privacy is at the heart of Superwhisper ›
         </button>
       </div>
@@ -315,21 +350,21 @@ function ModelStep({ onNext }: { onNext: () => void }) {
           className={cn(
             "flex flex-col items-center gap-2 rounded-[14px] border px-4 py-8 transition-colors",
             choice === "cloud"
-              ? "border-[#58a6ff] bg-[#58a6ff]/10"
+              ? "border-[var(--primary)] bg-[var(--primary)]/10"
               : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]",
           )}
         >
           <Cloud
             className={cn(
               "h-8 w-8",
-              choice === "cloud" ? "text-[#58a6ff]" : "text-white/50",
+              choice === "cloud" ? "text-[var(--primary)]" : "text-white/50",
             )}
             strokeWidth={1.5}
           />
           <span
             className={cn(
               "text-[14px] font-semibold",
-              choice === "cloud" ? "text-[#58a6ff]" : "text-white/70",
+              choice === "cloud" ? "text-[var(--primary)]" : "text-white/70",
             )}
           >
             Cloud
@@ -340,21 +375,21 @@ function ModelStep({ onNext }: { onNext: () => void }) {
           className={cn(
             "flex flex-col items-center gap-2 rounded-[14px] border px-4 py-8 transition-colors",
             choice === "local"
-              ? "border-[#58a6ff] bg-[#58a6ff]/10"
+              ? "border-[var(--primary)] bg-[var(--primary)]/10"
               : "border-white/10 bg-white/[0.03] hover:bg-white/[0.06]",
           )}
         >
           <WifiOff
             className={cn(
               "h-8 w-8",
-              choice === "local" ? "text-[#58a6ff]" : "text-white/50",
+              choice === "local" ? "text-[var(--primary)]" : "text-white/50",
             )}
             strokeWidth={1.5}
           />
           <span
             className={cn(
               "text-[14px] font-semibold",
-              choice === "local" ? "text-[#58a6ff]" : "text-white/70",
+              choice === "local" ? "text-[var(--primary)]" : "text-white/70",
             )}
           >
             Local
@@ -363,26 +398,6 @@ function ModelStep({ onNext }: { onNext: () => void }) {
       </div>
 
       <PrimaryButton onClick={onNext}>Continue</PrimaryButton>
-    </div>
-  );
-}
-
-/** Approximate the glossy diagonal-light card background from the real
- *  Welcome screen — layered gradients, not a literal asset. */
-function WelcomeSwirl() {
-  return (
-    <div className="pointer-events-none absolute inset-0 overflow-hidden rounded-[20px]">
-      <div
-        className="absolute inset-0 opacity-60"
-        style={{
-          background:
-            "linear-gradient(135deg, transparent 20%, rgba(255,255,255,0.06) 35%, transparent 50%), linear-gradient(45deg, transparent 40%, rgba(88,166,255,0.08) 55%, transparent 70%)",
-        }}
-      />
-      <div
-        className="absolute -top-24 -right-24 h-64 w-64 rounded-full opacity-40 blur-3xl"
-        style={{ background: "radial-gradient(circle, #58a6ff, transparent 70%)" }}
-      />
     </div>
   );
 }
