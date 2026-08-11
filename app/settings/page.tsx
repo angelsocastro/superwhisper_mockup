@@ -2888,16 +2888,20 @@ function SamplePreview({
 }
 
 /**
- * Super's page in the same shape as a mode's — one place to see everything
- * it does — but read-only here on purpose. Editing stays in Dictation /
- * Privacy / Models, the one place each setting is actually stored, so this
- * never becomes a second source of truth for the same field.
+ * Super's page in the same shape as a mode's — one place to see and edit
+ * everything it does. Editing here writes through the exact same `base`
+ * state and `onChange` setter that Dictation / Privacy / Models use, so
+ * it's a second door onto the one value, never a second copy of it — a
+ * jump link there would show the identical control with the identical
+ * value, just one navigation deeper.
  */
 function SuperDetailPanel({
   base,
+  onChange,
   onJumpTo,
 }: {
   base: BaseSettings;
+  onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
   onJumpTo: (tab: SettingsKey) => void;
 }) {
   const groups = [...new Set(SETTING_DEFS.map((d) => d.group))];
@@ -2906,7 +2910,7 @@ function SuperDetailPanel({
     <div className="flex flex-col gap-8">
       <PanelIntro
         title="Super"
-        description="This is what everyone gets unless a mode overrides it. Click any row to edit it where it actually lives."
+        description="This is what everyone gets unless a mode overrides it."
       />
 
       {groups.map((group) => (
@@ -2915,18 +2919,21 @@ function SuperDetailPanel({
             <SettingsRow
               key={def.key}
               label={def.label}
-              onClick={() => onJumpTo(TAB_BY_GROUP[group])}
+              description={
+                <button
+                  onClick={() => onJumpTo(TAB_BY_GROUP[group])}
+                  className="text-muted-foreground/70 underline decoration-dotted underline-offset-2 transition-colors hover:text-foreground"
+                >
+                  {group} settings →
+                </button>
+              }
               last={i === arr.length - 1}
               control={
-                <div className="flex items-center gap-2">
-                  <span className="text-[12px] text-muted-foreground">
-                    {formatSettingValue(base[def.key])}
-                  </span>
-                  <ChevronRight
-                    className="h-4 w-4 text-muted-foreground"
-                    strokeWidth={2}
-                  />
-                </div>
+                <SettingControl
+                  def={def}
+                  value={base[def.key]}
+                  onChange={(v) => onChange(def.key, v)}
+                />
               }
             />
           ))}
@@ -3910,6 +3917,7 @@ export default function SettingsPage() {
     settingsBody = (
       <SuperDetailPanel
         base={base}
+        onChange={setBaseValue}
         onJumpTo={(tab) => {
           setSubpage(null);
           setSettingsTab(tab);
