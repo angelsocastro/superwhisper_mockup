@@ -37,7 +37,6 @@ import {
   Trash2,
   Pencil,
   Info,
-  Upload,
   Map,
   Mail,
   Globe,
@@ -726,8 +725,10 @@ function PanelIntro({
   description?: React.ReactNode;
 }) {
   return (
-    <div className="flex flex-col gap-1">
-      <h1 className="text-[16px] font-semibold text-foreground">{title}</h1>
+    <div className="flex flex-col gap-1.5">
+      <h1 className="text-[20px] font-bold tracking-tight text-foreground">
+        {title}
+      </h1>
       {description && (
         <p className="text-[13px] leading-relaxed text-muted-foreground">
           {description}
@@ -1529,28 +1530,10 @@ function DictionaryPanel() {
 
   return (
     <div className="flex flex-col gap-4">
-      <div className="flex items-start justify-between gap-4">
-        <PanelIntro
-          title="Dictionary"
-          description="Terms are heard as-is; shortcuts expand a short phrase into more."
-        />
-        <div className="flex shrink-0 items-center gap-1">
-          <button
-            aria-label="Import list"
-            title="Import list"
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-          >
-            <Upload className="h-[15px] w-[15px]" strokeWidth={2} />
-          </button>
-          <button
-            aria-label="Export list"
-            title="Export list"
-            className="flex h-7 w-7 items-center justify-center rounded-[6px] text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-          >
-            <Download className="h-[15px] w-[15px]" strokeWidth={2} />
-          </button>
-        </div>
-      </div>
+      <PanelIntro
+        title="Dictionary"
+        description="Terms are heard as-is; shortcuts expand a short phrase into more."
+      />
 
       <div className="flex items-center justify-between gap-4">
         <SegmentedControl
