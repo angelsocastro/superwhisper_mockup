@@ -64,7 +64,7 @@ export function SettingsWindow({
                     key={tab.key}
                     onClick={() => onTabChange(tab.key)}
                     className={cn(
-                      "flex items-center gap-2.5 rounded-[7px] px-2 py-1.5 text-left text-[13px] font-medium transition-colors",
+                      "flex items-center gap-2.5 rounded-[7px] px-2 py-1.5 text-left text-[14px] font-medium transition-colors",
                       active === tab.key
                         ? "bg-fill-strong text-foreground"
                         : "text-foreground/80 hover:bg-fill-hover"
@@ -88,7 +88,7 @@ export function SettingsWindow({
           {onBack && (
             <button
               onClick={onBack}
-              className="mb-5 -ml-1 flex items-center gap-0.5 text-[13px] font-medium text-muted-foreground transition-colors hover:text-foreground"
+              className="mb-5 -ml-1 flex items-center gap-0.5 text-[14px] font-medium text-muted-foreground transition-colors hover:text-foreground"
             >
               <ChevronLeft className="h-4 w-4" strokeWidth={2} />
               Back

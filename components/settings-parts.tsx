@@ -14,9 +14,9 @@ export function SettingsSection({
   return (
     <section className="flex flex-col gap-4">
       <div className="flex flex-col gap-1">
-        <h2 className="text-[15px] font-semibold text-foreground">{title}</h2>
+        <h2 className="text-[16px] font-semibold text-foreground">{title}</h2>
         {description && (
-          <p className="text-[12px] leading-relaxed text-muted-foreground">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             {description}
           </p>
         )}
@@ -57,9 +57,9 @@ export function SettingsRow({
         </div>
       )}
       <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-        <span className="text-[13px] font-medium text-foreground">{label}</span>
+        <span className="text-[14px] font-medium text-foreground">{label}</span>
         {description && (
-          <span className="text-[12px] leading-snug text-muted-foreground">
+          <span className="text-[13px] leading-snug text-muted-foreground">
             {description}
           </span>
         )}

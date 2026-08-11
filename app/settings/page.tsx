@@ -547,7 +547,7 @@ function AccountFixtureSwitcher({
 }) {
   return (
     <div className="fixed top-4 left-1/2 z-50 flex -translate-x-1/2 items-center gap-2 rounded-full border border-white/10 bg-black/70 px-2 py-1.5 backdrop-blur-md">
-      <span className="pl-1.5 text-[10px] font-medium tracking-wide text-white/40 uppercase">
+      <span className="pl-1.5 text-[11px] font-medium tracking-wide text-white/40 uppercase">
         Signed in as
       </span>
       {ACCOUNT_FIXTURES.map((f) => (
@@ -555,7 +555,7 @@ function AccountFixtureSwitcher({
           key={f.key}
           onClick={() => onChange(f.key)}
           className={cn(
-            "rounded-full px-2.5 py-1 text-[11px] font-medium transition-colors",
+            "rounded-full px-2.5 py-1 text-[12px] font-medium transition-colors",
             value === f.key
               ? "bg-white text-black"
               : "text-white/60 hover:bg-white/10 hover:text-white",
@@ -621,7 +621,7 @@ function InfoDot() {
  */
 function HoverTip({ label }: { label: string }) {
   return (
-    <span className="hairline pointer-events-none absolute left-full z-30 ml-2 whitespace-nowrap rounded-[6px] bg-popover px-2 py-1 text-[12px] font-medium text-popover-foreground opacity-0 shadow-[0_4px_12px_-2px_rgb(0_0_0/0.35)] transition-opacity delay-500 duration-100 group-hover:opacity-100">
+    <span className="hairline pointer-events-none absolute left-full z-30 ml-2 whitespace-nowrap rounded-[6px] bg-popover px-2 py-1 text-[13px] font-medium text-popover-foreground opacity-0 shadow-[0_4px_12px_-2px_rgb(0_0_0/0.35)] transition-opacity delay-500 duration-100 group-hover:opacity-100">
       {label}
     </span>
   );
@@ -647,7 +647,7 @@ function LanguageChips({
       {value.map((lang) => (
         <span
           key={lang}
-          className="hairline flex items-center gap-1 rounded-[6px] bg-fill-hover py-1 pr-1 pl-2 text-[12px] font-medium text-foreground"
+          className="hairline flex items-center gap-1 rounded-[6px] bg-fill-hover py-1 pr-1 pl-2 text-[13px] font-medium text-foreground"
         >
           {lang}
           {value.length > 1 && (
@@ -671,7 +671,7 @@ function LanguageChips({
                 onChange([...value, lang]);
                 setAdding(false);
               }}
-              className="rounded-[4px] px-1.5 py-0.5 text-[12px] text-foreground/85 transition-colors hover:bg-fill-hover"
+              className="rounded-[4px] px-1.5 py-0.5 text-[13px] text-foreground/85 transition-colors hover:bg-fill-hover"
             >
               {lang}
             </button>
@@ -681,7 +681,7 @@ function LanguageChips({
         available.length > 0 && (
           <button
             onClick={() => setAdding(true)}
-            className="hairline flex items-center gap-1 rounded-[6px] bg-fill px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+            className="hairline flex items-center gap-1 rounded-[6px] bg-fill px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
           >
             <Plus className="h-3 w-3" strokeWidth={2.5} />
             Add
@@ -737,9 +737,9 @@ function PanelIntro({
 }) {
   return (
     <div className="flex flex-col gap-1">
-      <h1 className="text-[15px] font-semibold text-foreground">{title}</h1>
+      <h1 className="text-[16px] font-semibold text-foreground">{title}</h1>
       {description && (
-        <p className="text-[12px] leading-relaxed text-muted-foreground">
+        <p className="text-[13px] leading-relaxed text-muted-foreground">
           {description}
         </p>
       )}
@@ -749,7 +749,7 @@ function PanelIntro({
 
 function Kbd({ children }: { children: React.ReactNode }) {
   return (
-    <kbd className="hairline rounded-[5px] bg-fill-hover px-2 py-1 text-[11px] font-medium">
+    <kbd className="hairline rounded-[5px] bg-fill-hover px-2 py-1 text-[12px] font-medium">
       {children}
     </kbd>
   );
@@ -768,7 +768,7 @@ function GhostButton({
     <button
       onClick={onClick}
       className={cn(
-        "hairline rounded-[6px] bg-fill-hover px-2.5 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong",
+        "hairline rounded-[6px] bg-fill-hover px-2.5 py-1 text-[13px] font-medium text-foreground transition-colors hover:bg-fill-strong",
         className,
       )}
     >
@@ -819,7 +819,7 @@ function WhatsNewStack({
 
   return (
     <div className="flex flex-col gap-1.5">
-      <span className="flex items-center gap-1.5 px-1.5 text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+      <span className="flex items-center gap-1.5 px-1.5 text-[12px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
         <Sparkles className="h-3 w-3" strokeWidth={2} />
         What&rsquo;s new
       </span>
@@ -848,10 +848,10 @@ function WhatsNewStack({
               transform: `scale(${1 - i * 0.035})`,
             }}
           >
-            <span className="text-[10px] font-medium text-muted-foreground">
+            <span className="text-[11px] font-medium text-muted-foreground">
               {formatDaysAgo(item.daysAgo)}
             </span>
-            <span className="text-[12px] leading-snug font-medium text-foreground/90">
+            <span className="text-[13px] leading-snug font-medium text-foreground/90">
               {item.title}
             </span>
           </button>
@@ -919,7 +919,7 @@ function DailyNav({
             key={item.key}
             onClick={() => onSelect(item.key)}
             className={cn(
-              "group relative flex items-center rounded-[7px] py-1.5 text-left text-[13px] font-medium transition-colors",
+              "group relative flex items-center rounded-[7px] py-1.5 text-left text-[14px] font-medium transition-colors",
               collapsed ? "justify-center px-0" : "gap-2.5 px-2",
               active === item.key
                 ? "bg-fill-strong text-foreground"
@@ -951,13 +951,13 @@ function DailyNav({
               collapsed ? "justify-center px-1" : "min-w-0 flex-1 gap-2 px-1",
             )}
           >
-            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[11px] font-semibold">
+            <div className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[12px] font-semibold">
               A
             </div>
             {collapsed ? (
               <HoverTip label="Superwhisper PRO" />
             ) : (
-              <span className="truncate text-[12px] font-medium text-foreground/80">
+              <span className="truncate text-[13px] font-medium text-foreground/80">
                 Superwhisper <span className="text-muted-foreground">PRO</span>
               </span>
             )}
@@ -1021,7 +1021,7 @@ function SetupGuide({
   return (
     <div className="elevated-popover absolute right-3 bottom-11 z-30 w-[286px] overflow-hidden rounded-[10px] bg-popover">
       <div className="flex items-center gap-1 px-3.5 pt-3">
-        <span className="flex-1 text-[13px] font-semibold text-foreground">
+        <span className="flex-1 text-[14px] font-semibold text-foreground">
           Setup guide
         </span>
         <button
@@ -1040,14 +1040,14 @@ function SetupGuide({
             style={{ width: `${pct}%` }}
           />
         </div>
-        <span className="shrink-0 text-[11px] font-medium text-muted-foreground tabular-nums">
+        <span className="shrink-0 text-[12px] font-medium text-muted-foreground tabular-nums">
           {done}/{tasks.length}
         </span>
       </div>
 
       <div className="flex flex-col pb-2">
           {allDone && (
-            <p className="px-3.5 pb-2 text-[12px] leading-relaxed text-muted-foreground">
+            <p className="px-3.5 pb-2 text-[13px] leading-relaxed text-muted-foreground">
               That&rsquo;s everything — you&rsquo;re set up.
             </p>
           )}
@@ -1079,7 +1079,7 @@ function SetupGuide({
                 </span>
                 <span
                   className={cn(
-                    "flex-1 text-[13px]",
+                    "flex-1 text-[14px]",
                     task.done
                       ? "text-muted-foreground line-through"
                       : "text-foreground",
@@ -1088,7 +1088,7 @@ function SetupGuide({
                   {task.label}
                 </span>
                 {isNext && (
-                  <span className="shrink-0 text-[10px] font-semibold tracking-wide text-primary/80 uppercase">
+                  <span className="shrink-0 text-[11px] font-semibold tracking-wide text-primary/80 uppercase">
                     Next
                   </span>
                 )}
@@ -1107,10 +1107,10 @@ function SetupGuide({
 function StatTile({ value, label }: { value: string; label: string }) {
   return (
     <div className="flex flex-col gap-1">
-      <span className="text-[20px] font-semibold tracking-tight text-foreground">
+      <span className="text-[21px] font-semibold tracking-tight text-foreground">
         {value}
       </span>
-      <span className="text-[12px] text-muted-foreground">{label}</span>
+      <span className="text-[13px] text-muted-foreground">{label}</span>
     </div>
   );
 }
@@ -1149,17 +1149,17 @@ function LocalModelBanner({ onOpenModels }: { onOpenModels: () => void }) {
 
       <div className="relative z-10 flex w-full items-center justify-between gap-4 px-5 py-4">
         <div className="flex flex-col gap-0.5">
-          <span className="flex items-center gap-1.5 text-[11px] font-semibold tracking-wide text-white/70 uppercase">
+          <span className="flex items-center gap-1.5 text-[12px] font-semibold tracking-wide text-white/70 uppercase">
             <Lock className="h-3 w-3" strokeWidth={2} />
             Private by design
           </span>
-          <p className="text-[15px] font-semibold text-white">
+          <p className="text-[16px] font-semibold text-white">
             Nothing leaves your Mac.
           </p>
         </div>
         <button
           onClick={onOpenModels}
-          className="shrink-0 rounded-full bg-white/15 px-3.5 py-1.5 text-[12px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/25"
+          className="shrink-0 rounded-full bg-white/15 px-3.5 py-1.5 text-[13px] font-medium text-white backdrop-blur-sm transition-colors hover:bg-white/25"
         >
           Switch model →
         </button>
@@ -1211,14 +1211,14 @@ function HistoryRow({ item }: { item: HistoryItem }) {
         <button
           onClick={copy}
           title="Click to copy"
-          className="min-w-0 flex-1 text-left text-[13px] leading-snug text-foreground/90"
+          className="min-w-0 flex-1 text-left text-[14px] leading-snug text-foreground/90"
         >
           {item.text}
         </button>
 
         <span
           className={cn(
-            "shrink-0 text-[11px] font-medium text-primary transition-opacity",
+            "shrink-0 text-[12px] font-medium text-primary transition-opacity",
             copied ? "opacity-100" : "opacity-0"
           )}
         >
@@ -1256,7 +1256,7 @@ function HistoryRow({ item }: { item: HistoryItem }) {
               <Play className="h-3.5 w-3.5" strokeWidth={2} />
             </button>
             <Waveform />
-            <span className="shrink-0 text-[11px] text-muted-foreground tabular-nums">
+            <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums">
               0:{String(item.seconds).padStart(2, "0")}
             </span>
           </div>
@@ -1280,7 +1280,7 @@ function HistoryRow({ item }: { item: HistoryItem }) {
               />
 
               {variant === "original" && (
-                <p className="text-[13px] leading-relaxed text-muted-foreground">
+                <p className="text-[14px] leading-relaxed text-muted-foreground">
                   {item.original}
                 </p>
               )}
@@ -1288,10 +1288,10 @@ function HistoryRow({ item }: { item: HistoryItem }) {
                 <div className="flex flex-col gap-2">
                   {item.segments!.map((seg) => (
                     <div key={seg.at} className="flex gap-3">
-                      <span className="shrink-0 text-[12px] text-muted-foreground tabular-nums">
+                      <span className="shrink-0 text-[13px] text-muted-foreground tabular-nums">
                         {seg.at}
                       </span>
-                      <span className="text-[13px] leading-snug text-foreground/90">
+                      <span className="text-[14px] leading-snug text-foreground/90">
                         {seg.text}
                       </span>
                     </div>
@@ -1328,10 +1328,10 @@ function DictationHero({ modeName }: { modeName: string }) {
         <Mic className="h-[18px] w-[18px] text-primary" strokeWidth={2} />
       </div>
       <div className="flex min-w-0 flex-col gap-0.5">
-        <p className="flex items-center gap-2 text-[21px] font-semibold tracking-tight text-foreground">
+        <p className="flex items-center gap-2 text-[22px] font-semibold tracking-tight text-foreground">
           Hold <Kbd>Fn</Kbd> to dictate
         </p>
-        <p className="truncate text-[13px] text-muted-foreground">
+        <p className="truncate text-[14px] text-muted-foreground">
           Into {modeName}
         </p>
       </div>
@@ -1381,7 +1381,7 @@ function HomePanel({
 
       <section className="flex flex-col gap-4">
         <div className="flex items-center justify-between gap-4">
-          <h2 className="flex shrink-0 items-center gap-2 text-[15px] font-semibold text-foreground">
+          <h2 className="flex shrink-0 items-center gap-2 text-[16px] font-semibold text-foreground">
             <HistoryIcon
               className="h-4 w-4 text-muted-foreground"
               strokeWidth={2}
@@ -1397,19 +1397,19 @@ function HomePanel({
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search history"
-              className="min-w-0 flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
         </div>
 
         {groups.length === 0 ? (
-          <div className="hairline rounded-[10px] bg-card px-4 py-6 text-center text-[12px] text-muted-foreground">
+          <div className="hairline rounded-[10px] bg-card px-4 py-6 text-center text-[13px] text-muted-foreground">
             No dictations match &ldquo;{query}&rdquo;.
           </div>
         ) : (
           groups.map((group) => (
             <div key={group.label} className="flex flex-col gap-2">
-              <span className="text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+              <span className="text-[12px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
                 {group.label}
               </span>
               <div className="flex flex-col gap-1.5">
@@ -1534,7 +1534,7 @@ function DictionaryPanel() {
       </div>
 
       {list.length === 0 ? (
-        <div className="hairline rounded-[10px] px-4 py-6 text-center text-[12px] text-muted-foreground">
+        <div className="hairline rounded-[10px] px-4 py-6 text-center text-[13px] text-muted-foreground">
           {tab === "terms" ? "No terms yet." : "No snippets yet."}
         </div>
       ) : (
@@ -1554,10 +1554,10 @@ function DictionaryPanel() {
               <InlineEdit
                 value={entry.word}
                 onChange={(word) => updateWord(entry.id, word)}
-                className="pr-5 text-[13px] font-medium text-foreground"
+                className="pr-5 text-[14px] font-medium text-foreground"
               />
               {entry.to !== undefined && (
-                <span className="flex items-center gap-1 text-[12px] text-muted-foreground">
+                <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
                   →
                   <InlineEdit
                     value={entry.to}
@@ -1575,10 +1575,10 @@ function DictionaryPanel() {
           {tab === "terms" ? (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                <h2 className="text-[15px] font-semibold text-foreground">
+                <h2 className="text-[16px] font-semibold text-foreground">
                   Add a term
                 </h2>
-                <p className="text-[12px] leading-relaxed text-muted-foreground">
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
                   A name, bit of jargon, or shorthand you want recognized
                   as-is.
                 </p>
@@ -1589,12 +1589,12 @@ function DictionaryPanel() {
                 onChange={(e) => setTermDraft(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && submitAdd()}
                 placeholder="The word you'll say"
-                className="hairline rounded-[7px] bg-fill px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
               />
               <button
                 onClick={submitAdd}
                 disabled={!termDraft.trim()}
-                className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
+                className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
               >
                 Add
               </button>
@@ -1602,10 +1602,10 @@ function DictionaryPanel() {
           ) : (
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
-                <h2 className="text-[15px] font-semibold text-foreground">
+                <h2 className="text-[16px] font-semibold text-foreground">
                   Add a snippet
                 </h2>
-                <p className="text-[12px] leading-relaxed text-muted-foreground">
+                <p className="text-[13px] leading-relaxed text-muted-foreground">
                   Replace a word Superwhisper tends to mishear with the one
                   you meant.
                 </p>
@@ -1613,7 +1613,7 @@ function DictionaryPanel() {
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="dictionary-misheard"
-                  className="text-[11px] font-medium text-muted-foreground"
+                  className="text-[12px] font-medium text-muted-foreground"
                 >
                   Misheard as
                 </label>
@@ -1623,13 +1623,13 @@ function DictionaryPanel() {
                   value={misspellingDraft}
                   onChange={(e) => setMisspellingDraft(e.target.value)}
                   placeholder="e.g. super whisper"
-                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label
                   htmlFor="dictionary-correction"
-                  className="text-[11px] font-medium text-muted-foreground"
+                  className="text-[12px] font-medium text-muted-foreground"
                 >
                   Should be
                 </label>
@@ -1639,13 +1639,13 @@ function DictionaryPanel() {
                   onChange={(e) => setCorrectionDraft(e.target.value)}
                   onKeyDown={(e) => e.key === "Enter" && submitAdd()}
                   placeholder="e.g. Superwhisper"
-                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
               <button
                 onClick={submitAdd}
                 disabled={!misspellingDraft.trim() || !correctionDraft.trim()}
-                className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[12px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
+                className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
               >
                 Add
               </button>
@@ -1701,7 +1701,7 @@ function OptionSwatch({
       </div>
       <span
         className={cn(
-          "text-[11px] font-medium",
+          "text-[12px] font-medium",
           active ? "text-foreground" : "text-muted-foreground",
         )}
       >
@@ -1807,7 +1807,7 @@ function GeneralPanel({
     <div className="flex flex-col gap-8">
       <SettingsSection title="Appearance">
         <div className="flex items-start gap-4 px-4 py-3.5">
-          <span className="w-[104px] shrink-0 pt-3 text-[13px] font-medium text-foreground">
+          <span className="w-[104px] shrink-0 pt-3 text-[14px] font-medium text-foreground">
             Theme
           </span>
           <div className="flex flex-1 items-start justify-end gap-3">
@@ -1823,7 +1823,7 @@ function GeneralPanel({
         </div>
         <Separator className="ml-4 bg-line" />
         <div className="flex items-start gap-4 px-4 py-3.5">
-          <span className="w-[104px] shrink-0 pt-3 text-[13px] font-medium text-foreground">
+          <span className="w-[104px] shrink-0 pt-3 text-[14px] font-medium text-foreground">
             Recording window
           </span>
           <div className="flex flex-1 items-start justify-end gap-3">
@@ -2124,7 +2124,7 @@ function PrivacyPanel({
       >
         <SettingsRow
           label={
-            <span className="font-mono text-[12px] text-muted-foreground">
+            <span className="font-mono text-[13px] text-muted-foreground">
               /Users/angelsocastro/superwhisper
             </span>
           }
@@ -2149,7 +2149,7 @@ function PrivacyPanel({
           description="Removes every transcript and recording from this Mac."
           last
           control={
-            <button className="hairline rounded-[6px] bg-destructive/12 px-2.5 py-1 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/20">
+            <button className="hairline rounded-[6px] bg-destructive/12 px-2.5 py-1 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/20">
               Delete…
             </button>
           }
@@ -2203,7 +2203,7 @@ function ShortcutRow({
               <Kbd>{combo}</Kbd>
             </div>
           ) : (
-            <span className="text-[12px] text-muted-foreground/60">
+            <span className="text-[13px] text-muted-foreground/60">
               Record shortcut
             </span>
           )}
@@ -2306,11 +2306,11 @@ function ModePopover({
         )}
         strokeWidth={2.5}
       />
-      <span className="flex-1 truncate text-[13px] text-foreground">
+      <span className="flex-1 truncate text-[14px] text-foreground">
         {label}
       </span>
       {trailing && (
-        <span className="shrink-0 text-[11px] text-muted-foreground">
+        <span className="shrink-0 text-[12px] text-muted-foreground">
           {trailing}
         </span>
       )}
@@ -2352,7 +2352,7 @@ function ModePopover({
           }}
           className="flex w-full items-center px-2.5 py-1.5 text-left transition-colors hover:bg-fill-hover"
         >
-          <span className="pl-[22px] text-[13px] text-foreground">
+          <span className="pl-[22px] text-[14px] text-foreground">
             Mode settings…
           </span>
         </button>
@@ -2400,11 +2400,11 @@ function MicPopover({
               )}
               strokeWidth={2.5}
             />
-            <span className="flex-1 truncate text-[13px] text-foreground">
+            <span className="flex-1 truncate text-[14px] text-foreground">
               {mic.name}
             </span>
             {!mic.connected && (
-              <span className="shrink-0 text-[11px] text-muted-foreground">
+              <span className="shrink-0 text-[12px] text-muted-foreground">
                 Not connected
               </span>
             )}
@@ -2420,7 +2420,7 @@ function MicPopover({
           }}
           className="flex w-full items-center px-2.5 py-1.5 text-left transition-colors hover:bg-fill-hover"
         >
-          <span className="pl-[22px] text-[13px] text-foreground">
+          <span className="pl-[22px] text-[14px] text-foreground">
             Microphone settings…
           </span>
         </button>
@@ -2457,21 +2457,21 @@ function MicPriorityList({
             className="h-4 w-4 shrink-0 cursor-grab text-muted-foreground/50"
             strokeWidth={2}
           />
-          <span className="w-4 shrink-0 text-[12px] text-muted-foreground tabular-nums">
+          <span className="w-4 shrink-0 text-[13px] text-muted-foreground tabular-nums">
             {i + 1}
           </span>
-          <span className="flex-1 text-[13px] font-medium text-foreground">
+          <span className="flex-1 text-[14px] font-medium text-foreground">
             {mic.name}
           </span>
 
           {mic.id === activeId && (
-            <span className="shrink-0 rounded-[4px] bg-primary/15 px-1.5 py-px text-[10px] font-semibold tracking-wide text-primary uppercase">
+            <span className="shrink-0 rounded-[4px] bg-primary/15 px-1.5 py-px text-[11px] font-semibold tracking-wide text-primary uppercase">
               In use
             </span>
           )}
           <span
             className={cn(
-              "shrink-0 text-[11px]",
+              "shrink-0 text-[12px]",
               mic.connected ? "text-muted-foreground" : "text-muted-foreground/50"
             )}
           >
@@ -2668,10 +2668,10 @@ function ModelsPanel() {
 
       <div className="flex flex-col gap-4">
         <div className="flex flex-col gap-1">
-          <h2 className="text-[15px] font-semibold text-foreground">
+          <h2 className="text-[16px] font-semibold text-foreground">
             Model library
           </h2>
-          <p className="text-[12px] leading-relaxed text-muted-foreground">
+          <p className="text-[13px] leading-relaxed text-muted-foreground">
             Every model available to you. Offline ones download to your Mac and
             keep working without internet.
           </p>
@@ -2687,7 +2687,7 @@ function ModelsPanel() {
               value={query}
               onChange={(e) => setQuery(e.target.value)}
               placeholder="Search models"
-              className="min-w-0 flex-1 bg-transparent text-[12px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+              className="min-w-0 flex-1 bg-transparent text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
             />
           </div>
           <button
@@ -2703,7 +2703,7 @@ function ModelsPanel() {
           <button
             aria-label="Add API key"
             title="Add your own API key"
-            className="hairline flex h-7 items-center gap-1.5 rounded-[6px] bg-fill-hover px-2.5 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
+            className="hairline flex h-7 items-center gap-1.5 rounded-[6px] bg-fill-hover px-2.5 text-[13px] font-medium text-foreground transition-colors hover:bg-fill-strong"
           >
             <KeyRound className="h-[13px] w-[13px]" strokeWidth={2} />
             <Plus className="h-3 w-3" strokeWidth={2.5} />
@@ -2711,7 +2711,7 @@ function ModelsPanel() {
         </div>
 
         <div className="hairline overflow-hidden rounded-[10px] bg-card">
-          <div className="hairline-b grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 text-[11px] font-medium text-muted-foreground">
+          <div className="hairline-b grid grid-cols-[1fr_44px_74px_64px] items-center gap-2 px-3 py-2 text-[12px] font-medium text-muted-foreground">
             <span className="pl-6">Model name</span>
             <span>Type</span>
             <span>Speed / Acc.</span>
@@ -2719,7 +2719,7 @@ function ModelsPanel() {
           </div>
 
           {rows.length === 0 && (
-            <div className="px-4 py-6 text-center text-[12px] text-muted-foreground">
+            <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">
               No models match &ldquo;{query}&rdquo;.
             </div>
           )}
@@ -2751,7 +2751,7 @@ function ModelsPanel() {
                   </button>
                   <span
                     className={cn(
-                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] text-[9px] font-bold",
+                      "flex h-4 w-4 shrink-0 items-center justify-center rounded-[4px] text-[10px] font-bold",
                       provider.className,
                     )}
                   >
@@ -2761,7 +2761,7 @@ function ModelsPanel() {
                     {model.name}
                   </span>
                   {model.isNew && (
-                    <span className="shrink-0 rounded-[3px] bg-fill-strong px-1 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+                    <span className="shrink-0 rounded-[3px] bg-fill-strong px-1 py-px text-[10px] font-semibold tracking-wide text-foreground/80 uppercase">
                       New
                     </span>
                   )}
@@ -2780,7 +2780,7 @@ function ModelsPanel() {
                 <div className="flex items-center justify-end gap-1.5">
                   {model.size ? (
                     <>
-                      <span className="text-[11px] text-muted-foreground">
+                      <span className="text-[12px] text-muted-foreground">
                         {model.size}
                       </span>
                       <button
@@ -2855,30 +2855,30 @@ function SamplePreview({
 
   return (
     <section className="flex flex-col gap-3">
-      <h2 className="text-[15px] font-semibold text-foreground">
+      <h2 className="text-[16px] font-semibold text-foreground">
         How it comes out
       </h2>
       <div className="hairline overflow-hidden rounded-[10px] bg-card">
         <div className="flex flex-col gap-1.5 px-4 py-3">
-          <span className="text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+          <span className="text-[12px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
             As Super
           </span>
-          <p className="text-[13px] leading-relaxed text-muted-foreground italic">
+          <p className="text-[14px] leading-relaxed text-muted-foreground italic">
             {asSuper}
           </p>
         </div>
         <Separator className="ml-4 bg-line" />
         <div className="flex flex-col gap-1.5 px-4 py-3">
-          <span className="text-[11px] font-semibold tracking-wide text-primary uppercase">
+          <span className="text-[12px] font-semibold tracking-wide text-primary uppercase">
             In this mode
           </span>
-          <p className="text-[13px] leading-relaxed text-foreground italic">
+          <p className="text-[14px] leading-relaxed text-foreground italic">
             {withMode}
           </p>
         </div>
       </div>
       {identical && (
-        <p className="text-[12px] text-muted-foreground">
+        <p className="text-[13px] text-muted-foreground">
           Same as Super — this mode&rsquo;s overrides don&rsquo;t change how the
           text reads.
         </p>
@@ -2985,14 +2985,14 @@ function ModesPanel({
             <Sparkles className="h-3 w-3" strokeWidth={2.5} />
           </span>
           <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-            <span className="text-[13px] font-medium text-foreground">
+            <span className="text-[14px] font-medium text-foreground">
               Super
             </span>
-            <span className="truncate text-[12px] text-muted-foreground">
+            <span className="truncate text-[13px] text-muted-foreground">
               The base — everyone gets this unless a mode below overrides it
             </span>
           </div>
-          <span className="shrink-0 rounded-[4px] bg-fill-strong px-1.5 py-px text-[10px] font-semibold tracking-wide text-muted-foreground uppercase">
+          <span className="shrink-0 rounded-[4px] bg-fill-strong px-1.5 py-px text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
             Base
           </span>
           <ChevronRight
@@ -3002,7 +3002,7 @@ function ModesPanel({
         </div>
 
         <div className="flex items-center justify-between">
-          <h2 className="text-[15px] font-semibold text-foreground">
+          <h2 className="text-[16px] font-semibold text-foreground">
             Custom modes
           </h2>
           <GhostButton>+ Create mode</GhostButton>
@@ -3025,17 +3025,17 @@ function ModesPanel({
                   onCheckedChange={(c) => onToggleMode(mode.id, c === true)}
                 />
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="text-[13px] font-medium text-foreground">
+                  <span className="text-[14px] font-medium text-foreground">
                     <InlineEdit
                       value={mode.name}
                       onChange={(name) => onRename(mode.id, name)}
                     />
                   </span>
-                  <span className="truncate text-[12px] text-muted-foreground">
+                  <span className="truncate text-[13px] text-muted-foreground">
                     {mode.apps.join(", ")} · {count}{" "}
                     {count === 1 ? "override" : "overrides"}
                   </span>
-                  <span className="truncate text-[12px] text-foreground/55 italic">
+                  <span className="truncate text-[13px] text-foreground/55 italic">
                     {renderSample(resolveMode(base, mode))}
                   </span>
                 </div>
@@ -3135,7 +3135,7 @@ function SystemPanel() {
           }
           label="Claude Code"
           control={
-            <span className="text-[12px] text-muted-foreground">Installed</span>
+            <span className="text-[13px] text-muted-foreground">Installed</span>
           }
         />
         <SettingsRow
@@ -3206,7 +3206,7 @@ function ModeDetailPanel({
         <div className="flex flex-col gap-1.5">
           <label
             htmlFor="mode-instructions"
-            className="text-[13px] font-medium text-foreground"
+            className="text-[14px] font-medium text-foreground"
           >
             Custom instructions
           </label>
@@ -3216,7 +3216,7 @@ function ModeDetailPanel({
             onChange={(e) => onSetInstructions(e.target.value)}
             rows={3}
             placeholder="Adjust the transcript to your style using natural language."
-            className="hairline min-h-[76px] resize-y rounded-[8px] bg-card px-3 py-2.5 text-[13px] leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
+            className="hairline min-h-[76px] resize-y rounded-[8px] bg-card px-3 py-2.5 text-[14px] leading-relaxed text-foreground placeholder:text-muted-foreground focus:outline-none"
           />
         </div>
 
@@ -3245,7 +3245,7 @@ function ModeDetailPanel({
       <section className="flex flex-col gap-3">
         <button
           onClick={() => setAdvancedOpen((v) => !v)}
-          className="flex items-center gap-1.5 self-start text-[12px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
+          className="flex items-center gap-1.5 self-start text-[13px] font-semibold text-muted-foreground transition-colors hover:text-foreground"
         >
           <ChevronRight
             className={cn(
@@ -3270,7 +3270,7 @@ function ModeDetailPanel({
                 description="Start a recording in this mode"
                 last
                 control={
-                  <span className="text-[12px] text-muted-foreground/60">
+                  <span className="text-[13px] text-muted-foreground/60">
                     Record shortcut
                   </span>
                 }
@@ -3315,7 +3315,7 @@ function ModeDetailPanel({
               <div className="hairline flex flex-col gap-3 rounded-[10px] bg-card p-3">
                 {[...new Set(available.map((d) => d.group))].map((group) => (
                   <div key={group} className="flex flex-col gap-1">
-                    <span className="px-1 text-[11px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
+                    <span className="px-1 text-[12px] font-semibold tracking-wide text-muted-foreground/70 uppercase">
                       {group}
                     </span>
                     {available
@@ -3333,10 +3333,10 @@ function ModeDetailPanel({
                           }}
                           className="flex items-center justify-between rounded-[6px] px-1.5 py-1 text-left transition-colors hover:bg-fill-hover"
                         >
-                          <span className="text-[13px] text-foreground">
+                          <span className="text-[14px] text-foreground">
                             {def.label}
                           </span>
-                          <span className="text-[12px] text-muted-foreground">
+                          <span className="text-[13px] text-muted-foreground">
                             {formatSettingValue(base[def.key])}
                           </span>
                         </button>
@@ -3345,7 +3345,7 @@ function ModeDetailPanel({
                 ))}
                 <button
                   onClick={() => setPicking(false)}
-                  className="self-start px-1.5 text-[12px] font-medium text-muted-foreground hover:text-foreground"
+                  className="self-start px-1.5 text-[13px] font-medium text-muted-foreground hover:text-foreground"
                 >
                   Cancel
                 </button>
@@ -3401,11 +3401,11 @@ function AccountPanel({ account }: { account: Account }) {
   return (
     <div className="flex flex-col gap-8">
       <div className="flex items-center gap-3">
-        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[15px] font-semibold">
+        <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-full bg-fill-hover text-[16px] font-semibold">
           A
         </div>
         <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-          <span className="flex items-center gap-1.5 text-[15px] font-semibold text-foreground">
+          <span className="flex items-center gap-1.5 text-[16px] font-semibold text-foreground">
             {account.email}
             {!org && (
               <button
@@ -3416,9 +3416,9 @@ function AccountPanel({ account }: { account: Account }) {
               </button>
             )}
           </span>
-          <span className="flex items-center gap-1.5 text-[12px] text-muted-foreground">
+          <span className="flex items-center gap-1.5 text-[13px] text-muted-foreground">
             {org ? org.name : "Superwhisper"}
-            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[10px] font-semibold tracking-wide text-foreground/80 uppercase">
               {org ? ROLE_LABEL[org.role] : "Pro"}
             </span>
           </span>
@@ -3438,7 +3438,7 @@ function AccountPanel({ account }: { account: Account }) {
             last
             control={
               org.role === "member" ? (
-                <span className="text-[12px] text-muted-foreground">
+                <span className="text-[13px] text-muted-foreground">
                   Seat active
                 </span>
               ) : (
@@ -3468,7 +3468,7 @@ function AccountPanel({ account }: { account: Account }) {
               <span className="flex items-center gap-1.5">
                 {device.name}
                 {device.current && (
-                  <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+                  <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[10px] font-semibold tracking-wide text-foreground/80 uppercase">
                     This Mac
                   </span>
                 )}
@@ -3479,7 +3479,7 @@ function AccountPanel({ account }: { account: Account }) {
             control={
               <button
                 onClick={() => signOutDevice(device.id)}
-                className="rounded-[6px] px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
+                className="rounded-[6px] px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-destructive/15 hover:text-destructive"
               >
                 Sign out
               </button>
@@ -3489,14 +3489,14 @@ function AccountPanel({ account }: { account: Account }) {
       </SettingsSection>
 
       <section className="flex flex-col gap-3">
-        <h2 className="text-[15px] font-semibold text-foreground">
+        <h2 className="text-[16px] font-semibold text-foreground">
           Community & support
         </h2>
         <div className="flex flex-wrap gap-1.5">
           {links.map((l) => (
             <button
               key={l.label}
-              className="hairline flex items-center gap-1.5 rounded-full bg-fill-hover px-2.5 py-1 text-[12px] font-medium text-foreground transition-colors hover:bg-fill-strong"
+              className="hairline flex items-center gap-1.5 rounded-full bg-fill-hover px-2.5 py-1 text-[13px] font-medium text-foreground transition-colors hover:bg-fill-strong"
             >
               <l.icon
                 className="h-3.5 w-3.5 text-muted-foreground"
@@ -3530,13 +3530,13 @@ function BillingPanel({
     <div className="flex flex-col gap-8">
       <div className="hairline flex items-center gap-4 rounded-[10px] bg-card px-4 py-3.5">
         <div className="flex min-w-0 flex-1 flex-col gap-1">
-          <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+          <span className="flex items-center gap-1.5 text-[14px] font-semibold text-foreground">
             {org ? "Enterprise" : "Pro"}
-            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+            <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[10px] font-semibold tracking-wide text-foreground/80 uppercase">
               Active
             </span>
           </span>
-          <span className="text-[12px] leading-snug text-muted-foreground">
+          <span className="text-[13px] leading-snug text-muted-foreground">
             {org
               ? `${org.name} · 12 of ${seats} seats used · renews Sep 4, 2026`
               : "$8.49/month · renews Sep 4, 2026"}
@@ -3563,7 +3563,7 @@ function BillingPanel({
                 >
                   <Minus className="h-3 w-3" strokeWidth={2.5} />
                 </button>
-                <span className="min-w-6 text-center text-[12px] font-medium tabular-nums">
+                <span className="min-w-6 text-center text-[13px] font-medium tabular-nums">
                   {seats}
                 </span>
                 <button
@@ -3650,7 +3650,7 @@ function BillingPanel({
                     </GhostButton>
                     <button
                       onClick={() => setConfirmingCancel(false)}
-                      className="rounded-[6px] bg-destructive/15 px-2.5 py-1 text-[12px] font-medium text-destructive transition-colors hover:bg-destructive/25"
+                      className="rounded-[6px] bg-destructive/15 px-2.5 py-1 text-[13px] font-medium text-destructive transition-colors hover:bg-destructive/25"
                     >
                       Confirm cancel
                     </button>
@@ -3723,10 +3723,10 @@ function PlansPanel({ current = "pro" }: { current?: string }) {
               )}
             >
               <div className="flex min-w-0 flex-1 flex-col gap-1.5">
-                <span className="flex items-center gap-1.5 text-[13px] font-semibold text-foreground">
+                <span className="flex items-center gap-1.5 text-[14px] font-semibold text-foreground">
                   {plan.name}
                   {isCurrent && (
-                    <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[9px] font-semibold tracking-wide text-foreground/80 uppercase">
+                    <span className="rounded-[4px] bg-fill-strong px-1.5 py-px text-[10px] font-semibold tracking-wide text-foreground/80 uppercase">
                       Current
                     </span>
                   )}
@@ -3735,7 +3735,7 @@ function PlansPanel({ current = "pro" }: { current?: string }) {
                   {plan.points.map((point) => (
                     <li
                       key={point}
-                      className="flex items-center gap-1.5 text-[12px] text-muted-foreground"
+                      className="flex items-center gap-1.5 text-[13px] text-muted-foreground"
                     >
                       <CircleCheck
                         className="h-3 w-3 shrink-0 text-muted-foreground/60"
@@ -3749,15 +3749,15 @@ function PlansPanel({ current = "pro" }: { current?: string }) {
 
               <div className="flex shrink-0 flex-col items-end gap-2">
                 <div className="flex flex-col items-end">
-                  <span className="text-[13px] font-semibold text-foreground">
+                  <span className="text-[14px] font-semibold text-foreground">
                     {plan.price}
                   </span>
-                  <span className="text-[11px] text-muted-foreground">
+                  <span className="text-[12px] text-muted-foreground">
                     {plan.cadence}
                   </span>
                 </div>
                 {isCurrent ? (
-                  <span className="text-[12px] text-muted-foreground">
+                  <span className="text-[13px] text-muted-foreground">
                     In use
                   </span>
                 ) : (
@@ -4019,7 +4019,7 @@ export default function SettingsPage() {
               {!setupOpen && !allSetupDone && (
                 <button
                   onClick={() => setSetupOpen(true)}
-                  className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+                  className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
                 >
                   <CircleCheck className="h-[13px] w-[13px]" strokeWidth={2} />
                   Setup guide
@@ -4038,7 +4038,7 @@ export default function SettingsPage() {
                     : "Mode is pinned — click to go back to Auto"
                 }
                 className={cn(
-                  "flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium transition-colors hover:bg-fill-hover hover:text-foreground",
+                  "flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] font-medium transition-colors hover:bg-fill-hover hover:text-foreground",
                   modeOverride === null
                     ? "text-muted-foreground"
                     : "text-foreground"
@@ -4053,7 +4053,7 @@ export default function SettingsPage() {
               </button>
               <button
                 onClick={() => setMicMenuOpen((v) => !v)}
-                className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[11px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
+                className="flex items-center gap-1.5 rounded-[6px] px-2 py-1 text-[12px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
               >
                 {activeMic?.name ?? "No microphone"}
                 <Headphones className="h-[13px] w-[13px]" strokeWidth={2} />
@@ -4113,18 +4113,18 @@ export default function SettingsPage() {
         {whatsNewItem && (
           <DetailModal width="440px" onClose={() => setWhatsNewItem(null)}>
             <div className="flex flex-col gap-3">
-              <span className="text-[11px] font-medium text-muted-foreground">
+              <span className="text-[12px] font-medium text-muted-foreground">
                 {formatDaysAgo(whatsNewItem.daysAgo)}
               </span>
-              <h2 className="text-[17px] font-semibold text-foreground">
+              <h2 className="text-[18px] font-semibold text-foreground">
                 {whatsNewItem.title}
               </h2>
-              <p className="text-[13px] leading-relaxed text-muted-foreground">
+              <p className="text-[14px] leading-relaxed text-muted-foreground">
                 {whatsNewItem.body}
               </p>
               <button
                 onClick={() => setWhatsNewItem(null)}
-                className="mt-3 h-8 w-fit rounded-[7px] bg-primary px-4 text-[12px] font-semibold text-primary-foreground hover:brightness-110"
+                className="mt-3 h-8 w-fit rounded-[7px] bg-primary px-4 text-[13px] font-semibold text-primary-foreground hover:brightness-110"
               >
                 Got it
               </button>

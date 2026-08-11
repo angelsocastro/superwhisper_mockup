@@ -208,7 +208,7 @@
   }
   body {
     @apply bg-desk text-foreground;
-    font-size: 13px;
+    font-size: 14px;
     -webkit-font-smoothing: antialiased;
   }
   html {

@@ -25,7 +25,7 @@ export function SegmentedControl({
           <TabsTrigger
             key={option.value}
             value={option.value}
-            className="rounded-[6px] px-3 text-[12px] font-medium data-active:!bg-seg-active data-active:!text-foreground data-active:shadow-[0_1px_2px_rgb(0_0_0/0.25)]"
+            className="rounded-[6px] px-3 text-[13px] font-medium data-active:!bg-seg-active data-active:!text-foreground data-active:shadow-[0_1px_2px_rgb(0_0_0/0.25)]"
           >
             {option.label}
           </TabsTrigger>
