@@ -122,7 +122,7 @@ export default function OnboardingPage() {
     <main className="dark flex min-h-screen items-center justify-center bg-[#020203] p-6">
       <div
         className={cn(
-          "relative flex w-[520px] flex-col gap-7 overflow-hidden rounded-[20px] border px-9 pt-7 pb-8 shadow-[0_70px_140px_-30px_rgb(0_0_0/0.95)]",
+          "relative flex h-[600px] w-[520px] flex-col gap-7 overflow-hidden rounded-[20px] border px-9 pt-7 pb-8 shadow-[0_70px_140px_-30px_rgb(0_0_0/0.95)]",
           current === "welcome"
             ? "border-white/[0.08]"
             : "border-white/[0.06] bg-[#09090b]",
@@ -130,9 +130,13 @@ export default function OnboardingPage() {
       >
         {current === "welcome" && <WelcomeDrape />}
 
-        <div className="relative flex flex-col gap-7">
-          <ProgressBar step={step} />
-          <AmbientWaveform />
+        <div className="relative flex h-full flex-col gap-7">
+          <div className="flex shrink-0 flex-col gap-7">
+            <ProgressBar step={step} />
+            <AmbientWaveform />
+          </div>
+
+          <div className="flex flex-1 flex-col justify-center overflow-y-auto">
 
         {current === "welcome" && (
           <div className="relative flex flex-col items-center gap-4 py-10 text-center">
@@ -328,6 +332,7 @@ export default function OnboardingPage() {
             </Link>
           </div>
         )}
+          </div>
         </div>
       </div>
     </main>
