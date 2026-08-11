@@ -2481,20 +2481,10 @@ function ModelsPanel() {
     <div className="flex flex-col gap-8">
       <PanelIntro
         title="Models"
-        description="Which voice and language model each mode uses is set on the mode itself — Super and every custom mode pick from this same library."
+        description="Every model available to you. Which voice and language model each mode uses is set on the mode itself — Super and every custom mode pick from this same library. Offline ones download to your Mac and keep working without internet."
       />
 
       <div className="flex flex-col gap-4">
-        <div className="flex flex-col gap-1">
-          <h2 className="text-[16px] font-semibold text-foreground">
-            Model library
-          </h2>
-          <p className="text-[13px] leading-relaxed text-muted-foreground">
-            Every model available to you. Offline ones download to your Mac and
-            keep working without internet.
-          </p>
-        </div>
-
         <div className="flex items-center gap-2">
           <div className="hairline flex min-w-0 flex-1 items-center gap-2 rounded-[7px] bg-fill px-2.5 py-1.5">
             <Search
