@@ -861,7 +861,7 @@ function PanelIntro({
   title,
   description,
 }: {
-  title: string;
+  title: React.ReactNode;
   description?: React.ReactNode;
 }) {
   return (
@@ -3243,6 +3243,7 @@ function ModeDetailPanel({
   onClearOverride,
   onSetInstructions,
   onToggleMode,
+  onRename,
 }: {
   mode: ModeItem;
   base: BaseSettings;
@@ -3251,6 +3252,7 @@ function ModeDetailPanel({
   onClearOverride: (key: SettingKey) => void;
   onSetInstructions: (value: string) => void;
   onToggleMode: (enabled: boolean) => void;
+  onRename: (name: string) => void;
 }) {
   const [picking, setPicking] = useState(false);
 
@@ -3267,7 +3269,7 @@ function ModeDetailPanel({
     <div className="flex flex-col gap-8">
       <div className="flex items-start justify-between gap-4">
         <PanelIntro
-          title={mode.name}
+          title={<InlineEdit value={mode.name} onChange={onRename} />}
           description={
             overridden.length === 0 ? (
               <>Follows Super — nothing overridden yet.</>
@@ -4058,6 +4060,7 @@ export default function SettingsPage() {
         onClearOverride={(k) => clearOverride(modesDetailMode.id, k)}
         onSetInstructions={(v) => setModeInstructions(modesDetailMode.id, v)}
         onToggleMode={(enabled) => toggleMode(modesDetailMode.id, enabled)}
+        onRename={(name) => renameMode(modesDetailMode.id, name)}
       />
     );
   } else {
