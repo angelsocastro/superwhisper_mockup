@@ -120,6 +120,18 @@ const ALL_LANGUAGES = [
   "Chinese",
 ];
 
+const LANGUAGE_FLAG: Record<string, string> = {
+  English: "🇺🇸",
+  Spanish: "🇪🇸",
+  German: "🇩🇪",
+  French: "🇫🇷",
+  Portuguese: "🇵🇹",
+  Dutch: "🇳🇱",
+  Italian: "🇮🇹",
+  Japanese: "🇯🇵",
+  Chinese: "🇨🇳",
+};
+
 type BaseSettings = {
   languages: string[];
   autocapitalize: boolean;
@@ -151,8 +163,8 @@ const BASE_DEFAULTS: BaseSettings = {
   saveAudio: true,
   saveToHistory: true,
   copyToClipboard: true,
-  voiceModel: "S1-Voice",
-  languageModel: "Sonnet 4.5",
+  voiceModel: "Recommended (S1-Voice)",
+  languageModel: "Recommended (S1-Language)",
   playback: "Pause",
 };
 
@@ -171,6 +183,8 @@ type SettingDef = {
 /** Every setting is overridable by construction — which is what stops
  *  "make X per-mode" from being a feature request nine times over. */
 const SETTING_DEFS: SettingDef[] = [
+  { key: "voiceModel", label: "Voice model", group: "Models", kind: "choice", choices: ["Recommended (S1-Voice)", "S1-Voice", "Cohere Transcribe", "Nova 3"] },
+  { key: "languageModel", label: "Language model", group: "Models", kind: "choice", choices: ["Recommended (S1-Language)", "Sonnet 4.5", "Haiku 4.5", "S1-Language"] },
   { key: "languages", label: "Languages", group: "Language", kind: "languages" },
   { key: "autocapitalize", label: "Autocapitalize", group: "Formatting", kind: "switch" },
   { key: "removeFillers", label: "Remove filler words", group: "Formatting", kind: "switch" },
@@ -184,8 +198,6 @@ const SETTING_DEFS: SettingDef[] = [
   { key: "saveAudio", label: "Save audio recordings", group: "Privacy", kind: "switch" },
   { key: "saveToHistory", label: "Save to history", group: "Privacy", kind: "switch" },
   { key: "copyToClipboard", label: "Copy result to clipboard", group: "Privacy", kind: "switch" },
-  { key: "voiceModel", label: "Voice model", group: "Models", kind: "choice", choices: ["S1-Voice", "Cohere Transcribe", "Nova 3"] },
-  { key: "languageModel", label: "Language model", group: "Models", kind: "choice", choices: ["Sonnet 4.5", "Haiku 4.5", "S1-Language"] },
 ];
 
 function formatSettingValue(value: BaseSettings[SettingKey]): string {
@@ -619,63 +631,68 @@ function HoverTip({ label }: { label: string }) {
 /**
  * A shortlist of languages beats both a fixed one (rigid) and "Automatic"
  * (unreliable): naming the two you actually speak narrows detection from a
- * hundred candidates to two.
+ * hundred candidates to two. Flags stand in for the names — a glance at
+ * 🇺🇸🇪🇸 reads faster than "English, Spanish" does.
  */
-function LanguageChips({
+function LanguageSelect({
   value,
   onChange,
 }: {
   value: string[];
   onChange: (next: string[]) => void;
 }) {
-  const [adding, setAdding] = useState(false);
-  const available = ALL_LANGUAGES.filter((l) => !value.includes(l));
+  const [open, setOpen] = useState(false);
+
+  const toggle = (lang: string) => {
+    if (value.includes(lang)) {
+      if (value.length > 1) onChange(value.filter((l) => l !== lang));
+    } else {
+      onChange([...value, lang]);
+    }
+  };
 
   return (
-    <div className="flex flex-wrap items-center justify-end gap-1.5">
-      {value.map((lang) => (
-        <span
-          key={lang}
-          className="hairline flex items-center gap-1 rounded-[6px] bg-fill-hover py-1 pr-1 pl-2 text-[13px] font-medium text-foreground"
-        >
-          {lang}
-          {value.length > 1 && (
-            <button
-              onClick={() => onChange(value.filter((l) => l !== lang))}
-              aria-label={`Remove ${lang}`}
-              className="flex h-4 w-4 items-center justify-center rounded-full text-muted-foreground transition-colors hover:bg-fill-strong hover:text-foreground"
-            >
-              <X className="h-3 w-3" strokeWidth={2.5} />
-            </button>
-          )}
-        </span>
-      ))}
+    <div className="relative">
+      <button
+        onClick={() => setOpen((v) => !v)}
+        className="hairline flex items-center gap-1.5 rounded-[7px] bg-fill px-2.5 py-1.5 text-[15px] transition-colors hover:bg-fill-hover"
+      >
+        {value.map((lang) => (
+          <span key={lang}>{LANGUAGE_FLAG[lang] ?? "🏳️"}</span>
+        ))}
+        <ChevronDown
+          className="h-3.5 w-3.5 text-muted-foreground"
+          strokeWidth={2}
+        />
+      </button>
 
-      {adding && available.length > 0 ? (
-        <span className="hairline flex flex-wrap items-center gap-1 rounded-[6px] bg-card p-1">
-          {available.map((lang) => (
-            <button
-              key={lang}
-              onClick={() => {
-                onChange([...value, lang]);
-                setAdding(false);
-              }}
-              className="rounded-[4px] px-1.5 py-0.5 text-[13px] text-foreground/85 transition-colors hover:bg-fill-hover"
-            >
-              {lang}
-            </button>
-          ))}
-        </span>
-      ) : (
-        available.length > 0 && (
-          <button
-            onClick={() => setAdding(true)}
-            className="hairline flex items-center gap-1 rounded-[6px] bg-fill px-2 py-1 text-[13px] font-medium text-muted-foreground transition-colors hover:bg-fill-hover hover:text-foreground"
-          >
-            <Plus className="h-3 w-3" strokeWidth={2.5} />
-            Add
-          </button>
-        )
+      {open && (
+        <>
+          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
+          <div className="hairline elevated-popover absolute top-full right-0 z-50 mt-1.5 w-[200px] overflow-hidden rounded-[10px] bg-popover py-1">
+            {ALL_LANGUAGES.map((lang) => {
+              const checked = value.includes(lang);
+              return (
+                <button
+                  key={lang}
+                  onClick={() => toggle(lang)}
+                  className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-fill-hover"
+                >
+                  <span className="text-[16px]">{LANGUAGE_FLAG[lang]}</span>
+                  <span className="flex-1 text-[14px] text-foreground">
+                    {lang}
+                  </span>
+                  {checked && (
+                    <Check
+                      className="h-3.5 w-3.5 text-primary"
+                      strokeWidth={2.5}
+                    />
+                  )}
+                </button>
+              );
+            })}
+          </div>
+        </>
       )}
     </div>
   );
@@ -693,7 +710,7 @@ function SettingControl({
 }) {
   if (def.kind === "languages") {
     return (
-      <LanguageChips
+      <LanguageSelect
         value={value as string[]}
         onChange={(next) => onChange(next)}
       />
@@ -2745,40 +2762,36 @@ function resolveMode(base: BaseSettings, mode?: ModeItem): BaseSettings {
   return mode ? { ...base, ...mode.overrides } : base;
 }
 
-const SAMPLE_BY_LANGUAGE: Record<string, string> = {
-  English:
-    "hey joey we still on for coffee i think we should um leave earlier there might be traffic",
-  Spanish:
-    "oye joey seguimos con el café creo que eh deberíamos salir antes que igual hay tráfico",
-};
-
 /**
- * Renders the same dictation under a given set of settings. Reading the
- * result beats reading "Autocapitalize: On → Off" — it's how Wispr Flow
- * lets you pick a style, and it's the part worth borrowing.
+ * Renders typed-in text under a given set of settings — reading the result
+ * beats reading "Autocapitalize: On → Off". No sample ships baked in: this
+ * only shows anything once someone actually types something to try.
  */
-function renderSample(settings: BaseSettings): string {
-  const lang = settings.languages[0] ?? "English";
-  let text = SAMPLE_BY_LANGUAGE[lang] ?? SAMPLE_BY_LANGUAGE.English;
-
+function renderSample(settings: BaseSettings, text: string): string {
+  let out = text;
   if (settings.removeFillers) {
-    text = text.replace(/\b(um|eh)\s/g, "");
+    out = out.replace(/\b(um|eh)\s/gi, "");
   }
-  if (settings.autocapitalize) {
-    text = text.charAt(0).toUpperCase() + text.slice(1) + ".";
+  if (settings.autocapitalize && out.length > 0) {
+    out = out.charAt(0).toUpperCase() + out.slice(1);
+    if (!/[.!?]$/.test(out)) out += ".";
   }
-  return text;
+  return out;
 }
 
 function SamplePreview({
   base,
   mode,
+  previewText,
 }: {
   base: BaseSettings;
   mode: ModeItem;
+  previewText: string;
 }) {
-  const withMode = renderSample(resolveMode(base, mode));
-  const asSuper = renderSample(base);
+  if (previewText.trim() === "") return null;
+
+  const withMode = renderSample(resolveMode(base, mode), previewText);
+  const asSuper = renderSample(base, previewText);
   const identical = withMode === asSuper;
 
   return (
@@ -2877,12 +2890,16 @@ function SuperDetailPanel({
 function ModesPanel({
   modes,
   base,
+  previewText,
+  onPreviewTextChange,
   onOpenMode,
   onOpenSuper,
   onRename,
 }: {
   modes: ModeItem[];
   base: BaseSettings;
+  previewText: string;
+  onPreviewTextChange: (value: string) => void;
   onOpenMode: (id: string) => void;
   onOpenSuper: () => void;
   onRename: (id: string, name: string) => void;
@@ -2899,6 +2916,14 @@ function ModesPanel({
             {on} of {modes.length} are on.
           </>
         }
+      />
+
+      <input
+        name="mode-preview-text"
+        value={previewText}
+        onChange={(e) => onPreviewTextChange(e.target.value)}
+        placeholder="Try dictating something — see how each mode changes it"
+        className="hairline rounded-[8px] bg-card px-3.5 py-2.5 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
       />
 
       <section className="flex flex-col gap-4">
@@ -2966,9 +2991,11 @@ function ModesPanel({
                     {mode.apps.join(", ")} · {count}{" "}
                     {count === 1 ? "override" : "overrides"}
                   </span>
-                  <span className="truncate text-[13px] text-foreground/55 italic">
-                    {renderSample(resolveMode(base, mode))}
-                  </span>
+                  {previewText.trim() !== "" && (
+                    <span className="truncate text-[13px] text-foreground/55 italic">
+                      {renderSample(resolveMode(base, mode), previewText)}
+                    </span>
+                  )}
                 </div>
                 <ChevronRight
                   className="h-4 w-4 shrink-0 text-muted-foreground"
@@ -3088,6 +3115,7 @@ function SystemPanel() {
 function ModeDetailPanel({
   mode,
   base,
+  previewText,
   onSetOverride,
   onClearOverride,
   onSetInstructions,
@@ -3095,6 +3123,7 @@ function ModeDetailPanel({
 }: {
   mode: ModeItem;
   base: BaseSettings;
+  previewText: string;
   onSetOverride: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
   onClearOverride: (key: SettingKey) => void;
   onSetInstructions: (value: string) => void;
@@ -3138,7 +3167,7 @@ function ModeDetailPanel({
         </label>
       </div>
 
-      <SamplePreview base={base} mode={mode} />
+      <SamplePreview base={base} mode={mode} previewText={previewText} />
 
       {/* Tier 1 — what makes this mode this mode. Always visible: this is
           the minimum needed to create a useful mode, matching how little
@@ -3750,6 +3779,9 @@ export default function SettingsPage() {
   const [modeOverride, setModeOverride] = useState<string | null>(null);
   const [modeMenuOpen, setModeMenuOpen] = useState(false);
   const [micMenuOpen, setMicMenuOpen] = useState(false);
+  /** What someone typed to try out — shared across the Modes list and
+   *  every mode's own preview, so it only has to be typed once. */
+  const [previewText, setPreviewText] = useState("");
 
   const autoMode = modes.find((m) => m.enabled);
   const activeMode =
@@ -3898,6 +3930,7 @@ export default function SettingsPage() {
       <ModeDetailPanel
         mode={modesDetailMode}
         base={base}
+        previewText={previewText}
         onSetOverride={(k, v) => setOverride(modesDetailMode.id, k, v)}
         onClearOverride={(k) => clearOverride(modesDetailMode.id, k)}
         onSetInstructions={(v) => setModeInstructions(modesDetailMode.id, v)}
@@ -3909,6 +3942,8 @@ export default function SettingsPage() {
       <ModesPanel
         modes={modes}
         base={base}
+        previewText={previewText}
+        onPreviewTextChange={setPreviewText}
         onOpenMode={(id) => setModesSubpage({ kind: "modeDetail", modeId: id })}
         onOpenSuper={() => setModesSubpage({ kind: "superDetail" })}
         onRename={renameMode}
