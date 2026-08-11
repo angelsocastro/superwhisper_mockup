@@ -1,6 +1,7 @@
 "use client";
 
-import { useState, useSyncExternalStore } from "react";
+import { useState, useSyncExternalStore, useRef, useId } from "react";
+import { createPortal } from "react-dom";
 import {
   Home as HomeIcon,
   BookOpen,
@@ -120,17 +121,106 @@ const ALL_LANGUAGES = [
   "Chinese",
 ];
 
-const LANGUAGE_FLAG: Record<string, string> = {
-  English: "🇺🇸",
-  Spanish: "🇪🇸",
-  German: "🇩🇪",
-  French: "🇫🇷",
-  Portuguese: "🇵🇹",
-  Dutch: "🇳🇱",
-  Italian: "🇮🇹",
-  Japanese: "🇯🇵",
-  Chinese: "🇨🇳",
+/** Simplified flag artwork, not vexillographically exact — legible at 16px
+ *  is the only bar. Drawn flat so a clipPath can crop each to a circle. */
+const FLAG_SVG: Record<string, React.ReactNode> = {
+  English: (
+    <>
+      <rect width="20" height="20" fill="#B22234" />
+      <rect y="1.5" width="20" height="1.5" fill="#fff" />
+      <rect y="4.6" width="20" height="1.5" fill="#fff" />
+      <rect y="7.7" width="20" height="1.5" fill="#fff" />
+      <rect y="10.8" width="20" height="1.5" fill="#fff" />
+      <rect y="13.8" width="20" height="1.5" fill="#fff" />
+      <rect y="16.9" width="20" height="1.5" fill="#fff" />
+      <rect width="9" height="10.8" fill="#3C3B6E" />
+    </>
+  ),
+  Spanish: (
+    <>
+      <rect width="20" height="20" fill="#AA151B" />
+      <rect y="5" width="20" height="10" fill="#F1BF00" />
+    </>
+  ),
+  German: (
+    <>
+      <rect width="20" height="6.7" fill="#000" />
+      <rect y="6.7" width="20" height="6.7" fill="#DD0000" />
+      <rect y="13.3" width="20" height="6.7" fill="#FFCE00" />
+    </>
+  ),
+  French: (
+    <>
+      <rect width="6.7" height="20" fill="#0055A4" />
+      <rect x="6.7" width="6.7" height="20" fill="#fff" />
+      <rect x="13.3" width="6.7" height="20" fill="#EF4135" />
+    </>
+  ),
+  Portuguese: (
+    <>
+      <rect width="20" height="20" fill="#FF0000" />
+      <rect width="8" height="20" fill="#046A38" />
+    </>
+  ),
+  Dutch: (
+    <>
+      <rect width="20" height="6.7" fill="#AE1C28" />
+      <rect y="6.7" width="20" height="6.7" fill="#fff" />
+      <rect y="13.3" width="20" height="6.7" fill="#21468B" />
+    </>
+  ),
+  Italian: (
+    <>
+      <rect width="6.7" height="20" fill="#009246" />
+      <rect x="6.7" width="6.7" height="20" fill="#fff" />
+      <rect x="13.3" width="6.7" height="20" fill="#CE2B37" />
+    </>
+  ),
+  Japanese: (
+    <>
+      <rect width="20" height="20" fill="#fff" />
+      <circle cx="10" cy="10" r="6" fill="#BC002D" />
+    </>
+  ),
+  Chinese: (
+    <>
+      <rect width="20" height="20" fill="#DE2910" />
+      <circle cx="6" cy="6" r="2.2" fill="#FFDE00" />
+      <circle cx="11" cy="3.2" r="0.8" fill="#FFDE00" />
+      <circle cx="13" cy="5.5" r="0.8" fill="#FFDE00" />
+      <circle cx="13" cy="8.5" r="0.8" fill="#FFDE00" />
+      <circle cx="11" cy="10.5" r="0.8" fill="#FFDE00" />
+    </>
+  ),
 };
+
+function FlagIcon({ lang, size = 16 }: { lang: string; size?: number }) {
+  const clipId = useId();
+  return (
+    <svg
+      width={size}
+      height={size}
+      viewBox="0 0 20 20"
+      className="shrink-0"
+      aria-hidden="true"
+    >
+      <clipPath id={clipId}>
+        <circle cx="10" cy="10" r="10" />
+      </clipPath>
+      <g clipPath={`url(#${clipId})`}>
+        {FLAG_SVG[lang] ?? <circle cx="10" cy="10" r="10" fill="var(--line)" />}
+      </g>
+      <circle
+        cx="10"
+        cy="10"
+        r="9.5"
+        fill="none"
+        stroke="var(--hairline-c)"
+        strokeWidth="1"
+      />
+    </svg>
+  );
+}
 
 type BaseSettings = {
   languages: string[];
@@ -631,8 +721,15 @@ function HoverTip({ label }: { label: string }) {
 /**
  * A shortlist of languages beats both a fixed one (rigid) and "Automatic"
  * (unreliable): naming the two you actually speak narrows detection from a
- * hundred candidates to two. Flags stand in for the names — a glance at
- * 🇺🇸🇪🇸 reads faster than "English, Spanish" does.
+ * hundred candidates to two. Flags stand in for the names — a glance at two
+ * circles reads faster than "English, Spanish" does.
+ *
+ * The panel is portaled to #app-root (not document.body — that would
+ * escape the .dark class the whole app's theme tokens are scoped under)
+ * and positioned with a measured fixed rect instead of `absolute` in
+ * normal flow: every settings row sits inside a SettingsSection card with
+ * `overflow-hidden` (for the rounded corners), which would otherwise clip
+ * the dropdown or bury it behind later cards in the same stack.
  */
 function LanguageSelect({
   value,
@@ -642,6 +739,16 @@ function LanguageSelect({
   onChange: (next: string[]) => void;
 }) {
   const [open, setOpen] = useState(false);
+  const [rect, setRect] = useState<{ top: number; right: number } | null>(
+    null,
+  );
+  const buttonRef = useRef<HTMLButtonElement>(null);
+
+  const openMenu = () => {
+    const r = buttonRef.current?.getBoundingClientRect();
+    if (r) setRect({ top: r.bottom + 6, right: window.innerWidth - r.right });
+    setOpen(true);
+  };
 
   const toggle = (lang: string) => {
     if (value.includes(lang)) {
@@ -652,49 +759,59 @@ function LanguageSelect({
   };
 
   return (
-    <div className="relative">
+    <>
       <button
-        onClick={() => setOpen((v) => !v)}
-        className="hairline flex items-center gap-1.5 rounded-[7px] bg-fill px-2.5 py-1.5 text-[15px] transition-colors hover:bg-fill-hover"
+        ref={buttonRef}
+        onClick={() => (open ? setOpen(false) : openMenu())}
+        className="hairline flex items-center gap-1 rounded-[7px] bg-fill px-2.5 py-1.5 transition-colors hover:bg-fill-hover"
       >
         {value.map((lang) => (
-          <span key={lang}>{LANGUAGE_FLAG[lang] ?? "🏳️"}</span>
+          <FlagIcon key={lang} lang={lang} />
         ))}
         <ChevronDown
-          className="h-3.5 w-3.5 text-muted-foreground"
+          className="ml-0.5 h-3.5 w-3.5 text-muted-foreground"
           strokeWidth={2}
         />
       </button>
 
-      {open && (
-        <>
-          <div className="fixed inset-0 z-40" onClick={() => setOpen(false)} />
-          <div className="hairline elevated-popover absolute top-full right-0 z-50 mt-1.5 w-[200px] overflow-hidden rounded-[10px] bg-popover py-1">
-            {ALL_LANGUAGES.map((lang) => {
-              const checked = value.includes(lang);
-              return (
-                <button
-                  key={lang}
-                  onClick={() => toggle(lang)}
-                  className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-fill-hover"
-                >
-                  <span className="text-[16px]">{LANGUAGE_FLAG[lang]}</span>
-                  <span className="flex-1 text-[14px] text-foreground">
-                    {lang}
-                  </span>
-                  {checked && (
-                    <Check
-                      className="h-3.5 w-3.5 text-primary"
-                      strokeWidth={2.5}
-                    />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </>
-      )}
-    </div>
+      {open &&
+        rect &&
+        createPortal(
+          <>
+            <div
+              className="fixed inset-0 z-[100]"
+              onClick={() => setOpen(false)}
+            />
+            <div
+              style={{ top: rect.top, right: rect.right }}
+              className="hairline elevated-popover fixed z-[101] w-[200px] overflow-hidden rounded-[10px] bg-popover py-1"
+            >
+              {ALL_LANGUAGES.map((lang) => {
+                const checked = value.includes(lang);
+                return (
+                  <button
+                    key={lang}
+                    onClick={() => toggle(lang)}
+                    className="flex w-full items-center gap-2.5 px-3 py-1.5 text-left transition-colors hover:bg-fill-hover"
+                  >
+                    <FlagIcon lang={lang} size={18} />
+                    <span className="flex-1 text-[14px] text-foreground">
+                      {lang}
+                    </span>
+                    {checked && (
+                      <Check
+                        className="h-3.5 w-3.5 text-primary"
+                        strokeWidth={2.5}
+                      />
+                    )}
+                  </button>
+                );
+              })}
+            </div>
+          </>,
+          document.getElementById("app-root") ?? document.body,
+        )}
+    </>
   );
 }
 
@@ -3953,6 +4070,7 @@ export default function SettingsPage() {
 
   return (
     <main
+      id="app-root"
       className={cn(
         "flex min-h-screen items-center justify-center bg-desk p-10 transition-colors duration-300",
         appearance === "dark" && "dark",
