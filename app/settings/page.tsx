@@ -1419,8 +1419,17 @@ function HomePanel({
 /*                                 Dictionary                                  */
 /* -------------------------------------------------------------------------- */
 
-type VocabEntry = { id: string; word: string; to?: string };
-type DictionaryTab = "terms" | "snippets";
+/** A term is one entry — the correction is an optional attribute of it,
+ *  not a separate category. "super whisper" and its fix "Superwhisper"
+ *  are the same term, not two different kinds of thing. */
+type TermEntry = { id: string; word: string; correction?: string };
+
+/** A different mechanic entirely: a short trigger phrase that expands to
+ *  a long block of text (an email, an address, a sign-off) — not a
+ *  pronunciation fix, so it doesn't belong in the same list as terms. */
+type ShortcutEntry = { id: string; trigger: string; replacement: string };
+
+type DictionaryTab = "terms" | "shortcuts";
 
 let vocabIdCounter = 0;
 function nextVocabId() {
@@ -1428,65 +1437,102 @@ function nextVocabId() {
   return `new-${vocabIdCounter}`;
 }
 
+const SHORTCUTS_SEED: ShortcutEntry[] = [
+  { id: "seed-email", trigger: "my email", replacement: "angel@example.com" },
+  { id: "seed-signoff", trigger: "my sign off", replacement: "Best,\nAngel" },
+];
+
 function DictionaryPanel() {
-  const [entries, setEntries] = useState<VocabEntry[]>([
+  const [terms, setTerms] = useState<TermEntry[]>([
     { id: "seed-call", word: "call" },
     { id: "seed-controll", word: "controll" },
     { id: "seed-json", word: "json" },
     { id: "seed-jsons", word: "jsons" },
     { id: "seed-livekit", word: "livekit" },
     { id: "seed-mockups", word: "mockups" },
-    { id: "seed-super-whisper", word: "super whisper", to: "Superwhisper" },
+    { id: "seed-super-whisper", word: "super whisper", correction: "Superwhisper" },
     { id: "seed-superwhisper", word: "Superwhisper" },
     { id: "seed-telnyx", word: "telnyx" },
   ]);
+  const [shortcuts, setShortcuts] = useState<ShortcutEntry[]>(SHORTCUTS_SEED);
   const [tab, setTab] = useState<DictionaryTab>("terms");
   const [addOpen, setAddOpen] = useState(false);
+
   const [termDraft, setTermDraft] = useState("");
+  const [addCorrection, setAddCorrection] = useState(false);
   const [misspellingDraft, setMisspellingDraft] = useState("");
   const [correctionDraft, setCorrectionDraft] = useState("");
 
-  const terms = entries.filter((e) => e.to === undefined);
-  const corrections = entries.filter((e) => e.to !== undefined);
+  const [triggerDraft, setTriggerDraft] = useState("");
+  const [replacementDraft, setReplacementDraft] = useState("");
 
-  const updateWord = (id: string, word: string) =>
-    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, word } : e)));
+  const updateTermWord = (id: string, word: string) =>
+    setTerms((prev) => prev.map((e) => (e.id === id ? { ...e, word } : e)));
 
-  const updateTarget = (id: string, to: string) =>
-    setEntries((prev) => prev.map((e) => (e.id === id ? { ...e, to } : e)));
+  const updateTermCorrection = (id: string, correction: string) =>
+    setTerms((prev) => prev.map((e) => (e.id === id ? { ...e, correction } : e)));
 
-  const remove = (id: string) =>
-    setEntries((prev) => prev.filter((e) => e.id !== id));
+  const removeTerm = (id: string) =>
+    setTerms((prev) => prev.filter((e) => e.id !== id));
+
+  const updateShortcutTrigger = (id: string, trigger: string) =>
+    setShortcuts((prev) => prev.map((e) => (e.id === id ? { ...e, trigger } : e)));
+
+  const updateShortcutReplacement = (id: string, replacement: string) =>
+    setShortcuts((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, replacement } : e)),
+    );
+
+  const removeShortcut = (id: string) =>
+    setShortcuts((prev) => prev.filter((e) => e.id !== id));
 
   const openAdd = () => {
     setTermDraft("");
+    setAddCorrection(false);
     setMisspellingDraft("");
     setCorrectionDraft("");
+    setTriggerDraft("");
+    setReplacementDraft("");
     setAddOpen(true);
   };
 
   const submitAdd = () => {
     if (tab === "terms") {
-      const word = termDraft.trim();
-      if (!word) return;
-      setEntries((prev) => [{ id: nextVocabId(), word }, ...prev]);
+      if (addCorrection) {
+        const word = misspellingDraft.trim();
+        const correction = correctionDraft.trim();
+        if (!word || !correction) return;
+        setTerms((prev) => [{ id: nextVocabId(), word, correction }, ...prev]);
+      } else {
+        const word = termDraft.trim();
+        if (!word) return;
+        setTerms((prev) => [{ id: nextVocabId(), word }, ...prev]);
+      }
     } else {
-      const word = misspellingDraft.trim();
-      const to = correctionDraft.trim();
-      if (!word || !to) return;
-      setEntries((prev) => [{ id: nextVocabId(), word, to }, ...prev]);
+      const trigger = triggerDraft.trim();
+      const replacement = replacementDraft.trim();
+      if (!trigger || !replacement) return;
+      setShortcuts((prev) => [
+        { id: nextVocabId(), trigger, replacement },
+        ...prev,
+      ]);
     }
     setAddOpen(false);
   };
 
-  const list = tab === "terms" ? terms : corrections;
+  const canSubmit =
+    tab === "terms"
+      ? addCorrection
+        ? misspellingDraft.trim() && correctionDraft.trim()
+        : termDraft.trim()
+      : triggerDraft.trim() && replacementDraft.trim();
 
   return (
     <div className="flex flex-col gap-4">
       <div className="flex items-start justify-between gap-4">
         <PanelIntro
           title="Dictionary"
-          description="Terms are heard as-is; snippets fix words Superwhisper mishears."
+          description="Terms are heard as-is; shortcuts expand a short phrase into more."
         />
         <div className="flex shrink-0 items-center gap-1">
           <button
@@ -1512,49 +1558,84 @@ function DictionaryPanel() {
           onValueChange={(v) => setTab(v as DictionaryTab)}
           options={[
             { value: "terms", label: `Terms (${terms.length})` },
-            { value: "snippets", label: `Snippets (${corrections.length})` },
+            { value: "shortcuts", label: `Shortcuts (${shortcuts.length})` },
           ]}
         />
         <GhostButton
           onClick={openAdd}
           className="rounded-full bg-transparent px-3.5 py-1.5"
         >
-          {tab === "terms" ? "+ Add term" : "+ Add snippet"}
+          {tab === "terms" ? "+ Add term" : "+ Add shortcut"}
         </GhostButton>
       </div>
 
-      {list.length === 0 ? (
+      {tab === "terms" ? (
+        terms.length === 0 ? (
+          <div className="hairline rounded-[10px] px-4 py-6 text-center text-[13px] text-muted-foreground">
+            No terms yet.
+          </div>
+        ) : (
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5">
+            {terms.map((entry) => (
+              <div
+                key={entry.id}
+                className="hairline group relative flex flex-col gap-1 rounded-[10px] bg-card px-3.5 py-3"
+              >
+                <button
+                  onClick={() => removeTerm(entry.id)}
+                  aria-label={`Remove ${entry.word}`}
+                  className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100"
+                >
+                  <X className="h-3 w-3" strokeWidth={2} />
+                </button>
+                <InlineEdit
+                  value={entry.word}
+                  onChange={(word) => updateTermWord(entry.id, word)}
+                  className="pr-5 text-[14px] font-medium text-foreground"
+                />
+                {entry.correction !== undefined && (
+                  <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
+                    →
+                    <InlineEdit
+                      value={entry.correction}
+                      onChange={(v) => updateTermCorrection(entry.id, v)}
+                    />
+                  </span>
+                )}
+              </div>
+            ))}
+          </div>
+        )
+      ) : shortcuts.length === 0 ? (
         <div className="hairline rounded-[10px] px-4 py-6 text-center text-[13px] text-muted-foreground">
-          {tab === "terms" ? "No terms yet." : "No snippets yet."}
+          No shortcuts yet.
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5">
-          {list.map((entry) => (
+        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5">
+          {shortcuts.map((entry) => (
             <div
               key={entry.id}
               className="hairline group relative flex flex-col gap-1 rounded-[10px] bg-card px-3.5 py-3"
             >
               <button
-                onClick={() => remove(entry.id)}
-                aria-label={`Remove ${entry.word}`}
+                onClick={() => removeShortcut(entry.id)}
+                aria-label={`Remove ${entry.trigger}`}
                 className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100"
               >
                 <X className="h-3 w-3" strokeWidth={2} />
               </button>
               <InlineEdit
-                value={entry.word}
-                onChange={(word) => updateWord(entry.id, word)}
+                value={entry.trigger}
+                onChange={(v) => updateShortcutTrigger(entry.id, v)}
                 className="pr-5 text-[14px] font-medium text-foreground"
               />
-              {entry.to !== undefined && (
-                <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
-                  →
-                  <InlineEdit
-                    value={entry.to}
-                    onChange={(to) => updateTarget(entry.id, to)}
-                  />
-                </span>
-              )}
+              <span className="line-clamp-2 text-[13px] leading-snug text-muted-foreground">
+                ↳{" "}
+                <InlineEdit
+                  value={entry.replacement}
+                  onChange={(v) => updateShortcutReplacement(entry.id, v)}
+                />
+              </span>
             </div>
           ))}
         </div>
@@ -1569,21 +1650,71 @@ function DictionaryPanel() {
                   Add a term
                 </h2>
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  A name, bit of jargon, or shorthand you want recognized
-                  as-is.
+                  Names, slang, or custom terms Superwhisper should recognize.
                 </p>
               </div>
-              <input
-                autoFocus
-                value={termDraft}
-                onChange={(e) => setTermDraft(e.target.value)}
-                onKeyDown={(e) => e.key === "Enter" && submitAdd()}
-                placeholder="The word you'll say"
-                className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
-              />
+
+              <label className="flex items-center gap-2.5">
+                <Switch
+                  size="sm"
+                  checked={addCorrection}
+                  onCheckedChange={(c) => setAddCorrection(c === true)}
+                />
+                <span className="text-[13px] font-medium text-foreground">
+                  Add a correction
+                </span>
+              </label>
+
+              {addCorrection ? (
+                <>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="dictionary-misheard"
+                      className="text-[12px] font-medium text-muted-foreground"
+                    >
+                      Misspelling
+                    </label>
+                    <input
+                      id="dictionary-misheard"
+                      autoFocus
+                      value={misspellingDraft}
+                      onChange={(e) => setMisspellingDraft(e.target.value)}
+                      placeholder="e.g. super whisper"
+                      className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    />
+                  </div>
+                  <div className="flex flex-col gap-1.5">
+                    <label
+                      htmlFor="dictionary-correction"
+                      className="text-[12px] font-medium text-muted-foreground"
+                    >
+                      Correction
+                    </label>
+                    <input
+                      id="dictionary-correction"
+                      value={correctionDraft}
+                      onChange={(e) => setCorrectionDraft(e.target.value)}
+                      onKeyDown={(e) => e.key === "Enter" && submitAdd()}
+                      placeholder="e.g. Superwhisper"
+                      className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                    />
+                  </div>
+                </>
+              ) : (
+                <input
+                  autoFocus
+                  name="dictionary-term"
+                  value={termDraft}
+                  onChange={(e) => setTermDraft(e.target.value)}
+                  onKeyDown={(e) => e.key === "Enter" && submitAdd()}
+                  placeholder="The word you'll say"
+                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+              )}
+
               <button
                 onClick={submitAdd}
-                disabled={!termDraft.trim()}
+                disabled={!canSubmit}
                 className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
               >
                 Add
@@ -1593,48 +1724,48 @@ function DictionaryPanel() {
             <div className="flex flex-col gap-4">
               <div className="flex flex-col gap-1">
                 <h2 className="text-[16px] font-semibold text-foreground">
-                  Add a snippet
+                  Add a shortcut
                 </h2>
                 <p className="text-[13px] leading-relaxed text-muted-foreground">
-                  Replace a word Superwhisper tends to mishear with the one
-                  you meant.
+                  Say the trigger phrase and it expands to the full text —
+                  handy for an email, address, or sign-off.
                 </p>
               </div>
               <div className="flex flex-col gap-1.5">
                 <label
-                  htmlFor="dictionary-misheard"
+                  htmlFor="dictionary-trigger"
                   className="text-[12px] font-medium text-muted-foreground"
                 >
-                  Misheard as
+                  Original
                 </label>
                 <input
-                  id="dictionary-misheard"
+                  id="dictionary-trigger"
                   autoFocus
-                  value={misspellingDraft}
-                  onChange={(e) => setMisspellingDraft(e.target.value)}
-                  placeholder="e.g. super whisper"
+                  value={triggerDraft}
+                  onChange={(e) => setTriggerDraft(e.target.value)}
+                  placeholder="The phrase you'll say"
                   className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
               <div className="flex flex-col gap-1.5">
                 <label
-                  htmlFor="dictionary-correction"
+                  htmlFor="dictionary-replacement"
                   className="text-[12px] font-medium text-muted-foreground"
                 >
-                  Should be
+                  Replacement
                 </label>
-                <input
-                  id="dictionary-correction"
-                  value={correctionDraft}
-                  onChange={(e) => setCorrectionDraft(e.target.value)}
-                  onKeyDown={(e) => e.key === "Enter" && submitAdd()}
-                  placeholder="e.g. Superwhisper"
-                  className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                <textarea
+                  id="dictionary-replacement"
+                  value={replacementDraft}
+                  onChange={(e) => setReplacementDraft(e.target.value)}
+                  rows={3}
+                  placeholder="What it should be replaced with"
+                  className="hairline min-h-[76px] resize-y rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
                 />
               </div>
               <button
                 onClick={submitAdd}
-                disabled={!misspellingDraft.trim() || !correctionDraft.trim()}
+                disabled={!canSubmit}
                 className="self-end rounded-[6px] bg-primary px-3.5 py-1.5 text-[13px] font-medium text-primary-foreground transition-colors hover:brightness-110 disabled:pointer-events-none disabled:opacity-40"
               >
                 Add
