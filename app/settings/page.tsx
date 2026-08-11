@@ -311,6 +311,12 @@ type ModeItem = {
   builtIn: boolean;
 };
 
+let modeIdCounter = 0;
+function nextModeId() {
+  modeIdCounter += 1;
+  return `new-mode-${modeIdCounter}`;
+}
+
 const MODES_SEED: ModeItem[] = [
   {
     id: "personal",
@@ -3012,6 +3018,7 @@ function ModesPanel({
   onOpenMode,
   onOpenSuper,
   onRename,
+  onCreateMode,
 }: {
   modes: ModeItem[];
   base: BaseSettings;
@@ -3020,6 +3027,7 @@ function ModesPanel({
   onOpenMode: (id: string) => void;
   onOpenSuper: () => void;
   onRename: (id: string, name: string) => void;
+  onCreateMode: () => void;
 }) {
   const on = modes.filter((m) => m.enabled).length;
 
@@ -3074,7 +3082,7 @@ function ModesPanel({
           <h2 className="text-[16px] font-semibold text-foreground">
             Custom modes
           </h2>
-          <GhostButton>+ Create mode</GhostButton>
+          <GhostButton onClick={onCreateMode}>+ Create mode</GhostButton>
         </div>
 
         <div className="flex flex-col gap-2">
@@ -3964,6 +3972,26 @@ export default function SettingsPage() {
       prev.map((m) => (m.id === id ? { ...m, instructions } : m))
     );
 
+  /** Blank, not enabled by default — you build it, you switch it on. Opens
+   *  straight to its own page since there's nothing to look at on the list
+   *  yet. */
+  const createMode = () => {
+    const id = nextModeId();
+    setModes((prev) => [
+      ...prev,
+      {
+        id,
+        name: "New mode",
+        apps: [],
+        instructions: "",
+        overrides: {},
+        enabled: false,
+        builtIn: false,
+      },
+    ]);
+    setModesSubpage({ kind: "modeDetail", modeId: id });
+  };
+
   // Which pane the Settings modal shows, plus its back target. Modes left
   // this modal entirely — system/plans are the only sub-pages left here.
   let settingsBody: React.ReactNode;
@@ -4042,6 +4070,7 @@ export default function SettingsPage() {
         onOpenMode={(id) => setModesSubpage({ kind: "modeDetail", modeId: id })}
         onOpenSuper={() => setModesSubpage({ kind: "superDetail" })}
         onRename={renameMode}
+        onCreateMode={createMode}
       />
     );
   }

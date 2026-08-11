@@ -2,7 +2,9 @@
 
 A Next.js mockup of a redesigned settings/UX for [Superwhisper](https://superwhisper.com), the macOS voice dictation app. Built to accompany a product feedback email to the Superwhisper team — not affiliated with or endorsed by them.
 
-Live at [http://localhost:3000/settings](http://localhost:3000/settings) once running (see below).
+**Live demo:** [https://superwhisper-mockup.vercel.app](https://superwhisper-mockup.vercel.app)
+
+Or run it locally at [http://localhost:3000](http://localhost:3000) (see below) — the root path redirects to `/settings`, which is the whole app.
 
 ## The idea
 
