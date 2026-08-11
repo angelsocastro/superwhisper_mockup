@@ -1558,34 +1558,37 @@ function DictionaryPanel() {
             No terms yet.
           </div>
         ) : (
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(180px,1fr))] gap-2.5">
-            {terms.map((entry) => (
-              <div
+          <div className="hairline overflow-hidden rounded-[10px] bg-card">
+            {terms.map((entry, i) => (
+              <SettingsRow
                 key={entry.id}
-                className="hairline group relative flex flex-col gap-1 rounded-[10px] bg-card px-3.5 py-3"
-              >
-                <button
-                  onClick={() => removeTerm(entry.id)}
-                  aria-label={`Remove ${entry.word}`}
-                  className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100"
-                >
-                  <X className="h-3 w-3" strokeWidth={2} />
-                </button>
-                <InlineEdit
-                  value={entry.word}
-                  onChange={(word) => updateTermWord(entry.id, word)}
-                  className="pr-5 text-[14px] font-medium text-foreground"
-                />
-                {entry.correction !== undefined && (
-                  <span className="flex items-center gap-1 text-[13px] text-muted-foreground">
-                    →
-                    <InlineEdit
-                      value={entry.correction}
-                      onChange={(v) => updateTermCorrection(entry.id, v)}
-                    />
-                  </span>
-                )}
-              </div>
+                label={
+                  <InlineEdit
+                    value={entry.word}
+                    onChange={(word) => updateTermWord(entry.id, word)}
+                  />
+                }
+                description={
+                  entry.correction !== undefined ? (
+                    <span className="flex items-center gap-1">
+                      →
+                      <InlineEdit
+                        value={entry.correction}
+                        onChange={(v) => updateTermCorrection(entry.id, v)}
+                      />
+                    </span>
+                  ) : undefined
+                }
+                last={i === terms.length - 1}
+                control={
+                  <button
+                    onClick={() => removeTerm(entry.id)}
+                    className="text-[13px] font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    Remove
+                  </button>
+                }
+              />
             ))}
           </div>
         )
@@ -1594,32 +1597,35 @@ function DictionaryPanel() {
           No shortcuts yet.
         </div>
       ) : (
-        <div className="grid grid-cols-[repeat(auto-fill,minmax(200px,1fr))] gap-2.5">
-          {shortcuts.map((entry) => (
-            <div
+        <div className="hairline overflow-hidden rounded-[10px] bg-card">
+          {shortcuts.map((entry, i) => (
+            <SettingsRow
               key={entry.id}
-              className="hairline group relative flex flex-col gap-1 rounded-[10px] bg-card px-3.5 py-3"
-            >
-              <button
-                onClick={() => removeShortcut(entry.id)}
-                aria-label={`Remove ${entry.trigger}`}
-                className="absolute top-2 right-2 flex h-5 w-5 items-center justify-center rounded-full text-muted-foreground opacity-0 transition-opacity hover:bg-fill-hover hover:text-foreground group-hover:opacity-100"
-              >
-                <X className="h-3 w-3" strokeWidth={2} />
-              </button>
-              <InlineEdit
-                value={entry.trigger}
-                onChange={(v) => updateShortcutTrigger(entry.id, v)}
-                className="pr-5 text-[14px] font-medium text-foreground"
-              />
-              <span className="line-clamp-2 text-[13px] leading-snug text-muted-foreground">
-                ↳{" "}
+              label={
                 <InlineEdit
-                  value={entry.replacement}
-                  onChange={(v) => updateShortcutReplacement(entry.id, v)}
+                  value={entry.trigger}
+                  onChange={(v) => updateShortcutTrigger(entry.id, v)}
                 />
-              </span>
-            </div>
+              }
+              description={
+                <span className="flex items-center gap-1">
+                  ↳
+                  <InlineEdit
+                    value={entry.replacement}
+                    onChange={(v) => updateShortcutReplacement(entry.id, v)}
+                  />
+                </span>
+              }
+              last={i === shortcuts.length - 1}
+              control={
+                <button
+                  onClick={() => removeShortcut(entry.id)}
+                  className="text-[13px] font-medium text-muted-foreground hover:text-foreground"
+                >
+                  Remove
+                </button>
+              }
+            />
           ))}
         </div>
       )}
