@@ -1486,7 +1486,7 @@ function DictionaryPanel() {
       <div className="flex items-start justify-between gap-4">
         <PanelIntro
           title="Dictionary"
-          description="Terms are recognized as-is; snippets replace a word Superwhisper tends to mishear. Click any entry to edit it in place."
+          description="Terms are heard as-is; snippets fix words Superwhisper mishears."
         />
         <div className="flex shrink-0 items-center gap-1">
           <button
@@ -1929,12 +1929,12 @@ function PrivacyPanel() {
     <div className="flex flex-col gap-8">
       <PanelIntro
         title="Privacy"
-        description="Data handling that applies no matter which mode is active — the parts of dictation privacy a mode can't change."
+        description="Data handling no mode can override."
       />
 
       <SettingsSection
         title="History"
-        description="Nothing is uploaded unless you pick a cloud model. This controls how long the local record sticks around."
+        description="How long the local record sticks around."
       >
         <SettingsRow
           label={
@@ -2346,7 +2346,7 @@ function SoundPanel({
     <div className="flex flex-col gap-8">
       <SettingsSection
         title="Microphone priority"
-        description="Superwhisper records with the first one that's connected, so docking or swapping headphones doesn't lose your choice."
+        description="Records with the first one connected."
       >
         <MicPriorityList mics={mics} onReorder={onReorderMics} />
       </SettingsSection>
@@ -2481,7 +2481,7 @@ function ModelsPanel() {
     <div className="flex flex-col gap-8">
       <PanelIntro
         title="Models"
-        description="Every model available to you. Which voice and language model each mode uses is set on the mode itself — Super and every custom mode pick from this same library. Offline ones download to your Mac and keep working without internet."
+        description="Every model available. Which one a mode uses is set on that mode."
       />
 
       <div className="flex flex-col gap-4">
@@ -2777,10 +2777,8 @@ function ModesPanel({
         title="Modes"
         description={
           <>
-            Super handles everything on its own. A mode only kicks in for the
-            apps you point it at, and only changes what it lists — so you
-            switch one on rather than building one. {on} of {modes.length} are
-            on.
+            A mode overrides Super only for the apps you point it at.{" "}
+            {on} of {modes.length} are on.
           </>
         }
       />
@@ -2997,12 +2995,11 @@ function ModeDetailPanel({
         title={mode.name}
         description={
           overridden.length === 0 ? (
-            <>This mode changes nothing yet — it follows Super entirely.</>
+            <>Follows Super — nothing overridden yet.</>
           ) : (
             <>
               Overrides {overridden.length}{" "}
-              {overridden.length === 1 ? "setting" : "settings"}. Everything
-              else follows Super.
+              {overridden.length === 1 ? "setting" : "settings"}.
             </>
           )
         }
