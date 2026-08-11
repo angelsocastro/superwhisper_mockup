@@ -3087,22 +3087,15 @@ function ModesPanel({
                 className="hairline flex cursor-pointer items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-colors hover:bg-fill"
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span className="flex items-center gap-1.5 text-[14px] font-medium text-foreground">
-                    <span
-                      onClick={(e) => e.stopPropagation()}
-                      className="min-w-0"
-                    >
-                      <InlineEdit
-                        value={mode.name}
-                        onChange={(name) => onRename(mode.id, name)}
-                        className="whitespace-nowrap"
-                      />
-                    </span>
-                    {!mode.enabled && (
-                      <span className="shrink-0 rounded-[4px] bg-fill-strong px-1.5 py-px text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
-                        Off
-                      </span>
-                    )}
+                  <span
+                    onClick={(e) => e.stopPropagation()}
+                    className="min-w-0"
+                  >
+                    <InlineEdit
+                      value={mode.name}
+                      onChange={(name) => onRename(mode.id, name)}
+                      className="whitespace-nowrap text-[14px] font-medium text-foreground"
+                    />
                   </span>
                   <span className="truncate text-[13px] text-muted-foreground">
                     {mode.apps.join(", ")} · {count}{" "}
@@ -3114,6 +3107,11 @@ function ModesPanel({
                     </span>
                   )}
                 </div>
+                {!mode.enabled && (
+                  <span className="shrink-0 rounded-[4px] bg-fill-strong px-1.5 py-px text-[11px] font-semibold tracking-wide text-muted-foreground uppercase">
+                    No Auto
+                  </span>
+                )}
                 <ChevronRight
                   className="h-4 w-4 shrink-0 text-muted-foreground"
                   strokeWidth={2}
