@@ -50,6 +50,7 @@ import {
   Laptop,
   Monitor,
   Smartphone,
+  Webhook,
   CircleUser,
   CreditCard,
   ExternalLink,
@@ -127,6 +128,15 @@ type BaseSettings = {
   voiceModel: string;
   languageModel: string;
   playback: string;
+  syncDictionary: boolean;
+  syncModes: boolean;
+  syncHistory: boolean;
+  syncAudio: boolean;
+  webhookEndpoint: string;
+  webhookTranscript: boolean;
+  webhookAppContext: boolean;
+  webhookModeUsed: boolean;
+  webhookAudio: boolean;
 };
 
 const BASE_DEFAULTS: BaseSettings = {
@@ -145,6 +155,15 @@ const BASE_DEFAULTS: BaseSettings = {
   voiceModel: "Recommended (S1-Voice)",
   languageModel: "Recommended (S1-Language)",
   playback: "Pause",
+  syncDictionary: true,
+  syncModes: true,
+  syncHistory: true,
+  syncAudio: false,
+  webhookEndpoint: "Off",
+  webhookTranscript: true,
+  webhookAppContext: true,
+  webhookModeUsed: true,
+  webhookAudio: false,
 };
 
 type SettingKey = keyof BaseSettings;
@@ -153,14 +172,19 @@ type SettingDef = {
   key: SettingKey;
   label: string;
   group: string;
-  kind: "switch" | "choice" | "languages";
+  kind: "switch" | "choice" | "languages" | "endpoint";
   choices?: string[];
   /** Org admins can pin this — editing shows a lock instead of a control. */
   locked?: boolean;
+  /** Account-wide by nature — there's one Dictionary, one set of Modes, not
+   *  one per mode — so no mode can override it, unlike everything else. */
+  superOnly?: boolean;
 };
 
 /** Every setting is overridable by construction — which is what stops
- *  "make X per-mode" from being a feature request nine times over. */
+ *  "make X per-mode" from being a feature request nine times over.
+ *  superOnly is the one escape hatch, for settings that don't describe
+ *  per-dictation behavior at all (there's one Dictionary, not one per mode). */
 const SETTING_DEFS: SettingDef[] = [
   { key: "voiceModel", label: "Voice model", group: "Models", kind: "choice", choices: ["Recommended (S1-Voice)", "S1-Voice", "Cohere Transcribe", "Nova 3"] },
   { key: "languageModel", label: "Language model", group: "Models", kind: "choice", choices: ["Recommended (S1-Language)", "Sonnet 4.5", "Haiku 4.5", "S1-Language"] },
@@ -177,6 +201,15 @@ const SETTING_DEFS: SettingDef[] = [
   { key: "saveAudio", label: "Save audio recordings", group: "Privacy", kind: "switch" },
   { key: "saveToHistory", label: "Save to history", group: "Privacy", kind: "switch" },
   { key: "copyToClipboard", label: "Copy result to clipboard", group: "Privacy", kind: "switch" },
+  { key: "syncDictionary", label: "Dictionary", group: "Sync", kind: "switch", superOnly: true },
+  { key: "syncModes", label: "Modes", group: "Sync", kind: "switch", superOnly: true },
+  { key: "syncHistory", label: "History (text)", group: "Sync", kind: "switch" },
+  { key: "syncAudio", label: "Audio recordings", group: "Sync", kind: "switch" },
+  { key: "webhookEndpoint", label: "Webhook endpoint", group: "Delivery", kind: "endpoint" },
+  { key: "webhookTranscript", label: "Transcript text", group: "Delivery", kind: "switch" },
+  { key: "webhookAppContext", label: "App context", group: "Delivery", kind: "switch" },
+  { key: "webhookModeUsed", label: "Mode used", group: "Delivery", kind: "switch" },
+  { key: "webhookAudio", label: "Audio recording", group: "Delivery", kind: "switch" },
 ];
 
 function formatSettingValue(value: BaseSettings[SettingKey]): string {
@@ -248,6 +281,7 @@ const MODES_SEED: ModeItem[] = [
       identifySpeakers: true,
       pasteResult: false,
       saveToHistory: true,
+      webhookEndpoint: "Compliance archive",
     },
     enabled: false,
     builtIn: true,
@@ -451,6 +485,8 @@ type SettingsKey =
   | "general"
   | "shortcuts"
   | "sound"
+  | "sync"
+  | "webhooks"
   | "privacy"
   | "models";
 /**
@@ -581,11 +617,13 @@ const DAILY_USE: { key: DailyKey; label: string; icon: LucideIcon }[] = [
 const SETTINGS_TABS: (SettingsTab & { key: SettingsKey })[] = [
   { key: "account", label: "Account", icon: CircleUser, group: 0 },
   { key: "billing", label: "Billing", icon: CreditCard, group: 0 },
-  { key: "general", label: "General", icon: SettingsIcon, group: 1 },
-  { key: "shortcuts", label: "Shortcuts", icon: Keyboard, group: 1 },
-  { key: "sound", label: "Sound", icon: Volume2, group: 1 },
-  { key: "privacy", label: "Privacy", icon: Lock, group: 1 },
-  { key: "models", label: "Models", icon: BrainCircuit, group: 2 },
+  { key: "sync", label: "Sync", icon: Cloud, group: 1 },
+  { key: "webhooks", label: "Webhooks", icon: Webhook, group: 1 },
+  { key: "general", label: "General", icon: SettingsIcon, group: 2 },
+  { key: "shortcuts", label: "Shortcuts", icon: Keyboard, group: 2 },
+  { key: "sound", label: "Sound", icon: Volume2, group: 2 },
+  { key: "privacy", label: "Privacy", icon: Lock, group: 2 },
+  { key: "models", label: "Models", icon: BrainCircuit, group: 3 },
 ];
 
 /* -------------------------------------------------------------------------- */
@@ -710,15 +748,19 @@ function LanguageSelect({
   );
 }
 
-/** Renders whichever control a setting needs, for base and overrides alike. */
+/** Renders whichever control a setting needs, for base and overrides alike.
+ *  `endpoints` only matters for the "endpoint" kind — everything else
+ *  ignores it, so callers that never touch webhooks can omit it. */
 function SettingControl({
   def,
   value,
   onChange,
+  endpoints = [],
 }: {
   def: SettingDef;
   value: BaseSettings[SettingKey];
   onChange: (next: BaseSettings[SettingKey]) => void;
+  endpoints?: WebhookEndpoint[];
 }) {
   if (def.kind === "languages") {
     return (
@@ -732,9 +774,25 @@ function SettingControl({
     return (
       <Switch
         size="sm"
-        checked={value as boolean}
+        checked={(value as boolean) ?? false}
         onCheckedChange={(c) => onChange(c === true)}
       />
+    );
+  }
+  if (def.kind === "endpoint") {
+    return (
+      <select
+        value={(value as string) ?? "Off"}
+        onChange={(e) => onChange(e.target.value)}
+        className="hairline rounded-[6px] bg-fill-hover px-2.5 py-1.5 text-[13px] font-medium text-foreground transition-colors hover:bg-fill-strong focus:outline-none"
+      >
+        <option value="Off">Off</option>
+        {endpoints.map((ep) => (
+          <option key={ep.id} value={ep.label}>
+            {ep.label}
+          </option>
+        ))}
+      </select>
     );
   }
   return <PopupButton value={value as string} />;
@@ -855,9 +913,7 @@ function WhatsNewStack({
             tabIndex={i === 0 ? 0 : -1}
             className={cn(
               "hairline absolute flex flex-col gap-0.5 rounded-[8px] bg-raised px-2.5 py-2 text-left shadow-[0_8px_18px_-6px_rgb(0_0_0/0.55)] transition-all duration-300 ease-out",
-              i === 0
-                ? "cursor-pointer hover:bg-raised-hover"
-                : "pointer-events-none",
+              i === 0 ? "hover:bg-raised-hover" : "pointer-events-none",
             )}
             style={{
               top: `${i * OFFSET}px`,
@@ -1009,7 +1065,6 @@ type SetupTask = {
 
 const SETUP_SEED: SetupTask[] = [
   { id: "record", label: "Try your first dictation", done: true, icon: Mic },
-  { id: "language", label: "Pick your language", done: true, icon: Globe },
   {
     id: "shortcuts",
     label: "Customize your shortcuts",
@@ -2064,6 +2119,369 @@ function GearSwitch({ defaultChecked = false }: { defaultChecked?: boolean }) {
 }
 
 /* -------------------------------------------------------------------------- */
+/*                                settings: Sync                               */
+/* -------------------------------------------------------------------------- */
+
+type SyncMode = "off" | "cloud" | "self";
+
+const SYNC_DEFS = SETTING_DEFS.filter((d) => d.group === "Sync");
+
+function SyncPanel({
+  account,
+  base,
+  onChange,
+}: {
+  account: Account;
+  base: BaseSettings;
+  onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
+}) {
+  const org = account.org;
+  /** Only org-wide policy is web-only, and only for the admin setting it —
+   *  a member has nothing to edit anywhere, and an individual has no fleet
+   *  to govern, so there's no reason to send either of them off-app. */
+  const webManaged = !!org;
+  const locked = org?.role === "member";
+
+  const [syncMode, setSyncMode] = useState<SyncMode>(org ? "self" : "cloud");
+  const [relay, setRelay] = useState(
+    org ? "wss://sync.acme.internal:8443" : "",
+  );
+
+  return (
+    <div className="flex flex-col gap-8">
+      <PanelIntro
+        title="Sync"
+        description="Keep your dictionary, modes and history in step across every device."
+      />
+
+      <SettingsSection
+        title="Sync mode"
+        description={
+          webManaged
+            ? locked
+              ? `Set by ${org!.name}'s workspace admin — also viewable in Superwhisper Web.`
+              : `You're setting this for all of ${org!.name}. Managed in Superwhisper Web for the audit trail; nothing to edit here.`
+            : "Also editable in Superwhisper Web if you're not at this Mac."
+        }
+      >
+        <div className="flex items-center gap-4 px-4 py-3.5">
+          <span className="flex-1 text-[14px] font-medium text-foreground">
+            Where synced data lives
+          </span>
+          {webManaged ? (
+            locked ? (
+              <span
+                className="flex items-center gap-1.5 text-[13px] text-muted-foreground"
+                title={`Managed by ${org!.name}'s workspace admin.`}
+              >
+                <Lock className="h-3.5 w-3.5" strokeWidth={2} />
+                Managed by {org!.name}
+              </span>
+            ) : (
+              <a href="/dashboard/sync" target="_blank" rel="noopener noreferrer">
+                <GhostButton>
+                  <span className="flex items-center gap-1.5">
+                    Configure in Web
+                    <ExternalLink className="h-3 w-3" strokeWidth={2} />
+                  </span>
+                </GhostButton>
+              </a>
+            )
+          ) : (
+            <SegmentedControl
+              value={syncMode}
+              onValueChange={(v) => setSyncMode(v as SyncMode)}
+              options={[
+                { value: "off", label: "Off" },
+                { value: "cloud", label: "Cloud" },
+                { value: "self", label: "Self-hosted" },
+              ]}
+            />
+          )}
+        </div>
+
+        {!webManaged && syncMode === "self" && (
+          <>
+            <Separator className="ml-4 bg-line" />
+            <div className="flex flex-col gap-2.5 px-4 py-3.5">
+              <span className="text-[14px] font-medium text-foreground">
+                Relay address
+              </span>
+              <div className="flex items-center gap-2">
+                <input
+                  value={relay}
+                  onChange={(e) => setRelay(e.target.value)}
+                  placeholder="wss://sync.your-server.com:8443"
+                  className="hairline min-w-0 flex-1 rounded-[7px] bg-fill px-3 py-2 font-mono text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+                />
+                <GhostButton>Test</GhostButton>
+              </div>
+              <p className="text-[12px] leading-relaxed text-muted-foreground">
+                A relay you run yourself — a Docker image, one command. Your account exchanges pairing keys only; the data itself never touches Superwhisper&rsquo;s servers.
+              </p>
+            </div>
+          </>
+        )}
+      </SettingsSection>
+
+      <SettingsSection
+        title="What syncs"
+        description="Off by default for anything you'd rather keep on this Mac only — even with sync on."
+      >
+        {SYNC_DEFS.map((def, i) => (
+          <SettingsRow
+            key={def.key}
+            label={def.label}
+            last={i === SYNC_DEFS.length - 1}
+            control={
+              <SettingControl
+                def={def}
+                value={base[def.key]}
+                onChange={(v) => onChange(def.key, v)}
+              />
+            }
+          />
+        ))}
+      </SettingsSection>
+
+      <p className="px-1 text-[13px] leading-relaxed text-muted-foreground">
+        History and Audio recordings can be narrowed further per mode, from that mode&rsquo;s own Overrides list.
+      </p>
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
+/*                              settings: Webhooks                             */
+/* -------------------------------------------------------------------------- */
+
+type WebhookEndpoint = { id: string; label: string; url: string };
+
+let endpointIdCounter = 0;
+function nextEndpointId() {
+  endpointIdCounter += 1;
+  return `endpoint-${endpointIdCounter}`;
+}
+
+/** For an individual account this is just their own list, editable inline
+ *  below. For an org it's fleet-wide config, so the seed instead stands in
+ *  for whatever Superwhisper Web already has — see WebhooksPanel's
+ *  webManaged branch. Modes pick among these locally either way (see
+ *  ModeDetailPanel's "Delivery" section). */
+const WEBHOOK_ENDPOINTS_SEED: WebhookEndpoint[] = [
+  {
+    id: "default",
+    label: "Default",
+    url: "https://hooks.acme.internal/superwhisper",
+  },
+  {
+    id: "compliance",
+    label: "Compliance archive",
+    url: "https://hooks.acme.internal/compliance",
+  },
+  {
+    id: "personal",
+    label: "Personal Zapier",
+    url: "https://hooks.zapier.com/hooks/catch/xyz",
+  },
+];
+
+function WebhooksPanel({
+  account,
+  endpoints,
+  onAddEndpoint,
+  onUpdateEndpoint,
+  onRemoveEndpoint,
+}: {
+  account: Account;
+  endpoints: WebhookEndpoint[];
+  onAddEndpoint: (label: string, url: string) => void;
+  onUpdateEndpoint: (id: string, field: "label" | "url", value: string) => void;
+  onRemoveEndpoint: (id: string) => void;
+}) {
+  const org = account.org;
+  /** Same split as Sync: fleet-wide config is web-only for governance, but
+   *  an individual's own endpoints are theirs to edit right here. */
+  const webManaged = !!org;
+  const locked = org?.role === "member";
+
+  const [addOpen, setAddOpen] = useState(false);
+  const [labelDraft, setLabelDraft] = useState("");
+  const [urlDraft, setUrlDraft] = useState("");
+
+  const openAdd = () => {
+    setLabelDraft("");
+    setUrlDraft("");
+    setAddOpen(true);
+  };
+
+  const submitAdd = () => {
+    const label = labelDraft.trim();
+    const url = urlDraft.trim();
+    if (!label || !url) return;
+    onAddEndpoint(label, url);
+    setAddOpen(false);
+  };
+
+  return (
+    <div className="flex flex-col gap-8">
+      <PanelIntro
+        title="Webhooks"
+        description="Your transcripts, delivered to wherever your system of record already lives."
+      />
+
+      <ul className="flex flex-col gap-1.5 px-1 text-[13px] leading-relaxed text-muted-foreground">
+        <li>
+          · Log every client call into your CRM the moment you hang up.
+        </li>
+        <li>
+          · Archive meeting transcripts straight into your compliance system.
+        </li>
+        <li>
+          · Turn voice notes into nodes in your own knowledge graph.
+        </li>
+      </ul>
+
+      <SettingsSection
+        title="Endpoints"
+        description={
+          webManaged
+            ? locked
+              ? `Set by ${org!.name}'s workspace admin — also viewable in Superwhisper Web.`
+              : `You're setting this for all of ${org!.name}. Managed in Superwhisper Web for the audit trail.`
+            : "Any mode can route to one of these from its own Overrides list."
+        }
+      >
+        {endpoints.length === 0 ? (
+          <div className="px-4 py-6 text-center text-[13px] text-muted-foreground">
+            No endpoints yet.
+          </div>
+        ) : (
+          endpoints.map((ep, i) => (
+            <SettingsRow
+              key={ep.id}
+              icon={<Webhook className="h-4 w-4" strokeWidth={2} />}
+              label={
+                webManaged ? (
+                  ep.label
+                ) : (
+                  <InlineEdit
+                    value={ep.label}
+                    onChange={(v) => onUpdateEndpoint(ep.id, "label", v)}
+                  />
+                )
+              }
+              description={
+                <span className="font-mono">
+                  {webManaged ? (
+                    ep.url
+                  ) : (
+                    <InlineEdit
+                      value={ep.url}
+                      onChange={(v) => onUpdateEndpoint(ep.id, "url", v)}
+                    />
+                  )}
+                </span>
+              }
+              last={i === endpoints.length - 1}
+              control={
+                webManaged ? (
+                  <></>
+                ) : (
+                  <button
+                    onClick={() => onRemoveEndpoint(ep.id)}
+                    className="text-[13px] font-medium text-muted-foreground hover:text-foreground"
+                  >
+                    Remove
+                  </button>
+                )
+              }
+            />
+          ))
+        )}
+      </SettingsSection>
+
+      <div className="flex justify-end">
+        {webManaged ? (
+          locked ? (
+            <span
+              className="flex items-center gap-1.5 text-[13px] text-muted-foreground"
+              title={`Managed by ${org!.name}'s workspace admin.`}
+            >
+              <Lock className="h-3.5 w-3.5" strokeWidth={2} />
+              Managed by {org!.name}
+            </span>
+          ) : (
+            <a href="/dashboard/webhooks" target="_blank" rel="noopener noreferrer">
+              <GhostButton>
+                <span className="flex items-center gap-1.5">
+                  Manage endpoints in Web
+                  <ExternalLink className="h-3 w-3" strokeWidth={2} />
+                </span>
+              </GhostButton>
+            </a>
+          )
+        ) : (
+          <GhostButton onClick={openAdd}>+ Add endpoint</GhostButton>
+        )}
+      </div>
+
+      {addOpen && (
+        <DetailModal width="360px" onClose={() => setAddOpen(false)}>
+          <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-1">
+              <h2 className="text-[16px] font-semibold text-foreground">
+                Add an endpoint
+              </h2>
+              <p className="text-[13px] leading-relaxed text-muted-foreground">
+                Any mode can route to this from its own Overrides list.
+              </p>
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="endpoint-label"
+                className="text-[12px] font-medium text-muted-foreground"
+              >
+                Label
+              </label>
+              <input
+                id="endpoint-label"
+                autoFocus
+                value={labelDraft}
+                onChange={(e) => setLabelDraft(e.target.value)}
+                placeholder="e.g. Compliance archive"
+                className="hairline rounded-[7px] bg-fill px-3 py-2 text-[14px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+            </div>
+            <div className="flex flex-col gap-1.5">
+              <label
+                htmlFor="endpoint-url"
+                className="text-[12px] font-medium text-muted-foreground"
+              >
+                URL
+              </label>
+              <input
+                id="endpoint-url"
+                value={urlDraft}
+                onChange={(e) => setUrlDraft(e.target.value)}
+                placeholder="https://hooks.example.com/superwhisper"
+                className="hairline rounded-[7px] bg-fill px-3 py-2 font-mono text-[13px] text-foreground placeholder:text-muted-foreground focus:outline-none"
+              />
+            </div>
+            <GhostButton
+              onClick={submitAdd}
+              className="justify-center bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Add endpoint
+            </GhostButton>
+          </div>
+        </DetailModal>
+      )}
+    </div>
+  );
+}
+
+/* -------------------------------------------------------------------------- */
 /*                              settings: Privacy                              */
 /* -------------------------------------------------------------------------- */
 
@@ -2849,10 +3267,12 @@ function SuperDetailPanel({
   base,
   managed,
   onChange,
+  endpoints,
 }: {
   base: BaseSettings;
   managed: boolean;
   onChange: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
+  endpoints: WebhookEndpoint[];
 }) {
   const groups = [...new Set(SETTING_DEFS.map((d) => d.group))];
 
@@ -2871,6 +3291,7 @@ function SuperDetailPanel({
                 def={def}
                 value={base[def.key]}
                 onChange={(v) => onChange(def.key, v)}
+                endpoints={endpoints}
               />
             );
             return (
@@ -2906,7 +3327,6 @@ function ModesPanel({
   onPreviewTextChange,
   onOpenMode,
   onOpenSuper,
-  onRename,
   onCreateMode,
 }: {
   modes: ModeItem[];
@@ -2915,7 +3335,6 @@ function ModesPanel({
   onPreviewTextChange: (value: string) => void;
   onOpenMode: (id: string) => void;
   onOpenSuper: () => void;
-  onRename: (id: string, name: string) => void;
   onCreateMode: () => void;
 }) {
   const on = modes.filter((m) => m.enabled).length;
@@ -2945,7 +3364,7 @@ function ModesPanel({
             not one more thing that can be switched off. */}
         <div
           onClick={onOpenSuper}
-          className="hairline flex cursor-pointer items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-colors hover:bg-fill"
+          className="hairline flex items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-colors hover:bg-fill"
         >
           <span className="flex h-[18px] w-[18px] shrink-0 items-center justify-center rounded-[5px] bg-primary/15 text-primary">
             <Sparkles className="h-3 w-3" strokeWidth={2.5} />
@@ -2981,18 +3400,11 @@ function ModesPanel({
               <div
                 key={mode.id}
                 onClick={() => onOpenMode(mode.id)}
-                className="hairline flex cursor-pointer items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-colors hover:bg-fill"
+                className="hairline flex items-center gap-3 rounded-[9px] bg-card px-3.5 py-3 transition-colors hover:bg-fill"
               >
                 <div className="flex min-w-0 flex-1 flex-col gap-0.5">
-                  <span
-                    onClick={(e) => e.stopPropagation()}
-                    className="min-w-0"
-                  >
-                    <InlineEdit
-                      value={mode.name}
-                      onChange={(name) => onRename(mode.id, name)}
-                      className="whitespace-nowrap text-[14px] font-medium text-foreground"
-                    />
+                  <span className="truncate text-[14px] font-medium text-foreground">
+                    {mode.name}
                   </span>
                   <span className="truncate text-[13px] text-muted-foreground">
                     {mode.apps.join(", ")} · {count}{" "}
@@ -3128,6 +3540,7 @@ function ModeDetailPanel({
   mode,
   base,
   previewText,
+  endpoints,
   onSetOverride,
   onClearOverride,
   onSetInstructions,
@@ -3137,6 +3550,7 @@ function ModeDetailPanel({
   mode: ModeItem;
   base: BaseSettings;
   previewText: string;
+  endpoints: WebhookEndpoint[];
   onSetOverride: (key: SettingKey, value: BaseSettings[SettingKey]) => void;
   onClearOverride: (key: SettingKey) => void;
   onSetInstructions: (value: string) => void;
@@ -3152,7 +3566,9 @@ function ModeDetailPanel({
   const overridden = (Object.keys(mode.overrides) as SettingKey[])
     .map((key) => SETTING_DEFS.find((d) => d.key === key)!)
     .filter(Boolean);
-  const available = SETTING_DEFS.filter((d) => !(d.key in mode.overrides));
+  const available = SETTING_DEFS.filter(
+    (d) => !d.superOnly && !(d.key in mode.overrides),
+  );
 
   return (
     <div className="flex flex-col gap-8">
@@ -3255,6 +3671,7 @@ function ModeDetailPanel({
                         mode.overrides[def.key] as BaseSettings[SettingKey]
                       }
                       onChange={(v) => onSetOverride(def.key, v)}
+                      endpoints={endpoints}
                     />
                     <button
                       onClick={() => onClearOverride(def.key)}
@@ -3766,6 +4183,27 @@ export default function SettingsPage() {
   const [whatsNewStack, setWhatsNewStack] =
     useState<WhatsNewItem[]>(WHATS_NEW_SEED);
   const [modes, setModes] = useState<ModeItem[]>(MODES_SEED);
+  const [endpoints, setEndpoints] = useState<WebhookEndpoint[]>(
+    WEBHOOK_ENDPOINTS_SEED,
+  );
+
+  const addEndpoint = (label: string, url: string) =>
+    setEndpoints((prev) => [
+      ...prev,
+      { id: nextEndpointId(), label, url },
+    ]);
+
+  const updateEndpoint = (
+    id: string,
+    field: "label" | "url",
+    value: string,
+  ) =>
+    setEndpoints((prev) =>
+      prev.map((e) => (e.id === id ? { ...e, [field]: value } : e)),
+    );
+
+  const removeEndpoint = (id: string) =>
+    setEndpoints((prev) => prev.filter((e) => e.id !== id));
   const [base, setBase] = useState<BaseSettings>(BASE_DEFAULTS);
   const [mics, setMics] = useState<MicDevice[]>(MICS_SEED);
   const [pickedMicId, setPickedMicId] = useState<string | null>(null);
@@ -3914,6 +4352,16 @@ export default function SettingsPage() {
         <ShortcutsPanel />
       ) : settingsTab === "privacy" ? (
         <PrivacyPanel />
+      ) : settingsTab === "sync" ? (
+        <SyncPanel account={account} base={base} onChange={setBaseValue} />
+      ) : settingsTab === "webhooks" ? (
+        <WebhooksPanel
+          account={account}
+          endpoints={endpoints}
+          onAddEndpoint={addEndpoint}
+          onUpdateEndpoint={updateEndpoint}
+          onRemoveEndpoint={removeEndpoint}
+        />
       ) : settingsTab === "sound" ? (
         <SoundPanel mics={mics} onReorderMics={reorderMics} />
       ) : (
@@ -3937,7 +4385,12 @@ export default function SettingsPage() {
 
   if (modesSubpage?.kind === "superDetail") {
     modesBody = (
-      <SuperDetailPanel base={base} managed={isManaged} onChange={setBaseValue} />
+      <SuperDetailPanel
+        base={base}
+        managed={isManaged}
+        onChange={setBaseValue}
+        endpoints={endpoints}
+      />
     );
   } else if (modesDetailMode) {
     modesBody = (
@@ -3945,6 +4398,7 @@ export default function SettingsPage() {
         mode={modesDetailMode}
         base={base}
         previewText={previewText}
+        endpoints={endpoints}
         onSetOverride={(k, v) => setOverride(modesDetailMode.id, k, v)}
         onClearOverride={(k) => clearOverride(modesDetailMode.id, k)}
         onSetInstructions={(v) => setModeInstructions(modesDetailMode.id, v)}
@@ -3961,7 +4415,6 @@ export default function SettingsPage() {
         onPreviewTextChange={setPreviewText}
         onOpenMode={(id) => setModesSubpage({ kind: "modeDetail", modeId: id })}
         onOpenSuper={() => setModesSubpage({ kind: "superDetail" })}
-        onRename={renameMode}
         onCreateMode={createMode}
       />
     );
